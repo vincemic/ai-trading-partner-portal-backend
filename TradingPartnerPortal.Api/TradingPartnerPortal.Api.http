@@ -1,0 +1,11 @@
+@TradingPartnerPortal.Api_HostAddress = https://localhost:7218
+
+GET {{TradingPartnerPortal.Api_HostAddress}}/api/health
+Accept: application/json
+
+###
+
+GET {{TradingPartnerPortal.Api_HostAddress}}/api/version
+Accept: application/json
+
+###
