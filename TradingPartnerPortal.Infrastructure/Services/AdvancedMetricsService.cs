@@ -178,14 +178,14 @@ public class AdvancedMetricsService : IAdvancedMetricsService
         {
             // Remove events outside current window
             currentWindow.RemoveAll(f => failure.ReceivedAt.Subtract(f.ReceivedAt).TotalMinutes > burstWindowMinutes);
-            
+
             currentWindow.Add(failure);
 
             // Check if we have a burst
             if (currentWindow.Count >= burstThreshold)
             {
                 var windowStart = currentWindow.First().ReceivedAt;
-                
+
                 // Avoid duplicate burst points for the same window
                 if (!burstPoints.Any(b => Math.Abs((DateTime.Parse(b.WindowStart) - windowStart).TotalMinutes) < burstWindowMinutes))
                 {

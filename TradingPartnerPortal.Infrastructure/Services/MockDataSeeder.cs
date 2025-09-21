@@ -244,7 +244,7 @@ public class MockDataSeeder : IMockDataSeeder
                 {
                     var occurredAt = eventDate.AddHours(_random.Next(0, 24)).AddMinutes(_random.Next(0, 60)).AddSeconds(_random.Next(0, 60));
                     var outcome = outcomes[_random.Next(outcomes.Length)];
-                    
+
                     // Bias towards success (80% success rate)
                     if (_random.NextDouble() < 0.8)
                     {
@@ -269,9 +269,9 @@ public class MockDataSeeder : IMockDataSeeder
     private List<AuditEvent> CreateSampleAuditEvents(List<Partner> partners)
     {
         var auditEvents = new List<AuditEvent>();
-        var operationTypes = new[] { 
-            AuditOperationType.KeyUpload, 
-            AuditOperationType.KeyGenerate, 
+        var operationTypes = new[] {
+            AuditOperationType.KeyUpload,
+            AuditOperationType.KeyGenerate,
             AuditOperationType.KeyRevoke,
             AuditOperationType.SftpPasswordChange,
             AuditOperationType.KeyPromote
@@ -282,7 +282,7 @@ public class MockDataSeeder : IMockDataSeeder
         {
             // Generate audit events for the last 60 days
             var auditCount = _random.Next(10, 30);
-            
+
             for (int i = 0; i < auditCount; i++)
             {
                 var timestamp = DateTime.UtcNow.AddDays(-_random.Next(0, 60)).AddHours(-_random.Next(0, 24));

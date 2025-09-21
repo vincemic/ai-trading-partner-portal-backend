@@ -37,8 +37,8 @@ public class DashboardService : IDashboardService
         var successRate = totalFiles > 0 ? (double)successfulFiles / totalFiles * 100 : 0;
 
         var processedFiles = files24h.Where(f => f.ProcessedAt.HasValue).ToList();
-        var avgProcessingTime = processedFiles.Any() 
-            ? processedFiles.Average(f => f.ProcessingLatencyMs ?? 0) 
+        var avgProcessingTime = processedFiles.Any()
+            ? processedFiles.Average(f => f.ProcessingLatencyMs ?? 0)
             : 0;
 
         var totalBytes = files24h.Sum(f => f.SizeBytes);
