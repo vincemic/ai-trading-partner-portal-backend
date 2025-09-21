@@ -5,11 +5,12 @@
 1. [Overview](#overview)
 2. [API Endpoints](#api-endpoints)
 3. [Authentication & Authorization](#authentication--authorization)
-4. [Data Models](#data-models)
-5. [Test Environment Configuration](#test-environment-configuration)
-6. [Error Handling](#error-handling)
-7. [Examples & Sample Requests](#examples--sample-requests)
-8. [Testing Tools](#testing-tools)
+4. [Real-Time Notifications (SSE)](#real-time-notifications-server-sent-events)
+5. [Data Models](#data-models)
+6. [Test Environment Configuration](#test-environment-configuration)
+7. [Error Handling](#error-handling)
+8. [Examples & Sample Requests](#examples--sample-requests)
+9. [Testing Tools](#testing-tools)
 
 ## Overview
 
@@ -28,6 +29,7 @@ The Trading Partner Portal Backend API provides REST endpoints for managing EDI 
 - Dashboard metrics and analytics
 - Audit trail for security operations
 - Real-time monitoring data
+- Server-Sent Events (SSE) for real-time notifications
 
 ## API Endpoints
 
@@ -329,6 +331,216 @@ Returns information about periods with no file activity.
   "flagged": true
 }
 ```
+
+### Real-Time Notifications (Server-Sent Events)
+
+#### SSE Stream Endpoint
+
+```http
+GET /api/events/stream
+```
+
+Establishes a Server-Sent Events connection for real-time notifications about key operations and system events.
+
+**Headers Required:**
+
+- `X-Session-Token`: Valid session token
+- `Accept: text/event-stream` (recommended)
+- `Cache-Control: no-cache` (recommended)
+
+**Optional Headers:**
+
+- `Last-Event-ID`: Resume from specific event sequence (for reconnection)
+
+**Response Format:**
+
+The endpoint returns a continuous stream of events in SSE format:
+
+```text
+event: key.promoted
+id: 1
+data: {"keyId":"abc123","previousPrimaryKeyId":"def456"}
+
+event: key.revoked  
+id: 2
+data: {"keyId":"xyz789"}
+
+:hb
+
+event: file.created
+id: 3
+data: {"fileId":"file123","direction":"Inbound","docType":"850"}
+```
+
+#### Event Types
+
+The SSE stream delivers these event types:
+
+**Key Management Events:**
+
+- `key.promoted`: A key has been promoted to primary status
+- `key.revoked`: A key has been revoked
+
+**File Transfer Events:**
+
+- `file.created`: New file has been received or sent
+- `file.statusChanged`: File processing status has changed
+
+**Dashboard Events:**
+
+- `dashboard.metricsTick`: Real-time dashboard metrics update
+
+**Connection Management:**
+
+- `:hb`: Heartbeat sent every 15 seconds to keep connection alive
+
+#### Event Data Schemas
+
+**Key Promoted Event:**
+
+```json
+{
+  "keyId": "string",
+  "previousPrimaryKeyId": "string|null"
+}
+```
+
+**Key Revoked Event:**
+
+```json
+{
+  "keyId": "string"
+}
+```
+
+**File Created Event:**
+
+```json
+{
+  "fileId": "string",
+  "direction": "Inbound|Outbound", 
+  "docType": "string"
+}
+```
+
+**File Status Changed Event:**
+
+```json
+{
+  "fileId": "string",
+  "oldStatus": "string",
+  "newStatus": "string"
+}
+```
+
+#### Implementation Example
+
+```javascript
+// Establish SSE connection
+function connectToEventStream() {
+  const eventSource = new EventSource('/api/events/stream', {
+    headers: {
+      'X-Session-Token': sessionToken
+    }
+  });
+
+  // Handle key promotion events
+  eventSource.addEventListener('key.promoted', (event) => {
+    const data = JSON.parse(event.data);
+    console.log('Key promoted:', data.keyId);
+    // Update UI to reflect new primary key
+    updateKeyStatus(data.keyId, 'primary');
+  });
+
+  // Handle key revocation events
+  eventSource.addEventListener('key.revoked', (event) => {
+    const data = JSON.parse(event.data);
+    console.log('Key revoked:', data.keyId);
+    // Update UI to show revoked status
+    updateKeyStatus(data.keyId, 'revoked');
+  });
+
+  // Handle file events
+  eventSource.addEventListener('file.created', (event) => {
+    const data = JSON.parse(event.data);
+    console.log('New file:', data.fileId, data.direction);
+    // Update dashboard or file list
+    refreshDashboard();
+  });
+
+  // Handle connection errors
+  eventSource.onerror = (error) => {
+    console.error('SSE connection error:', error);
+    // Implement exponential backoff reconnection
+    setTimeout(() => connectToEventStream(), 5000);
+  };
+
+  // Store last event ID for reconnection
+  eventSource.onmessage = (event) => {
+    if (event.lastEventId) {
+      localStorage.setItem('lastEventId', event.lastEventId);
+    }
+  };
+
+  return eventSource;
+}
+
+// Reconnection with event replay
+function reconnectWithReplay() {
+  const lastEventId = localStorage.getItem('lastEventId');
+  const url = lastEventId 
+    ? `/api/events/stream?lastEventId=${lastEventId}`
+    : '/api/events/stream';
+    
+  const eventSource = new EventSource(url, {
+    headers: {
+      'X-Session-Token': sessionToken,
+      'Last-Event-ID': lastEventId || ''
+    }
+  });
+  
+  // ... handle events as above
+}
+```
+
+#### Best Practices for SSE Implementation
+
+**Connection Management:**
+
+- Always handle connection errors and implement reconnection logic
+- Use exponential backoff for reconnection attempts (start with 1s, max 30s)
+- Store the `Last-Event-ID` to resume from the correct point after disconnection
+
+**Event Handling:**
+
+- Parse event data as JSON
+- Implement event-specific handlers for different event types
+- Update UI incrementally rather than refreshing entire sections
+
+**Performance:**
+
+- Limit to one SSE connection per browser tab
+- Close connections when navigating away from pages that need real-time updates
+- Use heartbeat events to detect broken connections
+
+**Error Handling:**
+
+```javascript
+eventSource.addEventListener('error', (event) => {
+  if (eventSource.readyState === EventSource.CONNECTING) {
+    console.log('Reconnecting to event stream...');
+  } else {
+    console.error('SSE connection failed');
+    // Implement fallback polling if needed
+  }
+});
+```
+
+**Authentication:**
+
+- SSE connections respect the same authentication requirements as REST endpoints
+- Include session token in connection headers
+- Handle 401/403 errors by redirecting to login
 
 ### PGP Key Management
 
@@ -824,6 +1036,241 @@ const promoteResponse = await fetch(`/api/keys/${key.keyId}/promote`, {
   headers: { 'X-Session-Token': sessionToken }
 });
 const promoteResult = await promoteResponse.json();
+```
+
+### Real-Time Notifications with SSE
+
+```javascript
+// Complete SSE implementation with error handling and reconnection
+class EventStreamManager {
+  constructor(sessionToken) {
+    this.sessionToken = sessionToken;
+    this.eventSource = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelay = 1000; // Start with 1 second
+    this.lastEventId = localStorage.getItem('lastSSEEventId');
+  }
+
+  connect() {
+    // Build URL with Last-Event-ID if available
+    let url = '/api/events/stream';
+    if (this.lastEventId) {
+      url += `?lastEventId=${this.lastEventId}`;
+    }
+
+    this.eventSource = new EventSource(url, {
+      headers: {
+        'X-Session-Token': this.sessionToken
+      }
+    });
+
+    // Set up event listeners
+    this.setupEventListeners();
+
+    console.log('SSE connection established');
+  }
+
+  setupEventListeners() {
+    // Generic message handler to capture event IDs
+    this.eventSource.onmessage = (event) => {
+      if (event.lastEventId) {
+        this.lastEventId = event.lastEventId;
+        localStorage.setItem('lastSSEEventId', event.lastEventId);
+      }
+    };
+
+    // Key management events
+    this.eventSource.addEventListener('key.promoted', (event) => {
+      const data = JSON.parse(event.data);
+      this.handleKeyPromoted(data);
+    });
+
+    this.eventSource.addEventListener('key.revoked', (event) => {
+      const data = JSON.parse(event.data);
+      this.handleKeyRevoked(data);
+    });
+
+    // File transfer events
+    this.eventSource.addEventListener('file.created', (event) => {
+      const data = JSON.parse(event.data);
+      this.handleFileCreated(data);
+    });
+
+    this.eventSource.addEventListener('file.statusChanged', (event) => {
+      const data = JSON.parse(event.data);
+      this.handleFileStatusChanged(data);
+    });
+
+    // Dashboard events
+    this.eventSource.addEventListener('dashboard.metricsTick', (event) => {
+      const data = JSON.parse(event.data);
+      this.handleDashboardUpdate(data);
+    });
+
+    // Error handling
+    this.eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      this.handleConnectionError();
+    };
+
+    // Connection state monitoring
+    this.eventSource.onopen = () => {
+      console.log('SSE connection opened');
+      this.reconnectAttempts = 0;
+      this.reconnectDelay = 1000;
+    };
+  }
+
+  handleKeyPromoted(data) {
+    console.log('Key promoted:', data.keyId);
+    // Update key management UI
+    this.updateKeyInUI(data.keyId, { isPrimary: true });
+    if (data.previousPrimaryKeyId) {
+      this.updateKeyInUI(data.previousPrimaryKeyId, { isPrimary: false });
+    }
+    // Show notification
+    this.showNotification('Key promoted to primary', 'info');
+  }
+
+  handleKeyRevoked(data) {
+    console.log('Key revoked:', data.keyId);
+    // Update key management UI
+    this.updateKeyInUI(data.keyId, { status: 'Revoked' });
+    // Show notification
+    this.showNotification('Key has been revoked', 'warning');
+  }
+
+  handleFileCreated(data) {
+    console.log('New file:', data.fileId, data.direction);
+    // Update dashboard counters
+    this.incrementFileCounter(data.direction);
+    // Refresh file list if visible
+    if (this.isFileListVisible()) {
+      this.refreshFileList();
+    }
+    // Show notification for important files
+    if (data.docType === '850') {
+      this.showNotification(`New Purchase Order received`, 'success');
+    }
+  }
+
+  handleFileStatusChanged(data) {
+    console.log('File status changed:', data.fileId, data.newStatus);
+    // Update file status in UI
+    this.updateFileStatus(data.fileId, data.newStatus);
+    // Show notification for failures
+    if (data.newStatus === 'Failed') {
+      this.showNotification(`File processing failed`, 'error');
+    }
+  }
+
+  handleDashboardUpdate(data) {
+    // Update dashboard metrics in real-time
+    this.updateDashboardMetrics(data.summary);
+  }
+
+  handleConnectionError() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${this.reconnectDelay}ms`);
+      
+      setTimeout(() => {
+        this.disconnect();
+        this.connect();
+      }, this.reconnectDelay);
+
+      // Exponential backoff with jitter
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
+    } else {
+      console.error('Max reconnection attempts reached');
+      this.showNotification('Lost connection to server', 'error');
+    }
+  }
+
+  disconnect() {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+  }
+
+  // Helper methods (implement based on your UI framework)
+  updateKeyInUI(keyId, updates) {
+    // Update key in your key management table/list
+    const keyElement = document.querySelector(`[data-key-id="${keyId}"]`);
+    if (keyElement && updates.isPrimary !== undefined) {
+      keyElement.classList.toggle('primary-key', updates.isPrimary);
+    }
+    if (keyElement && updates.status) {
+      keyElement.setAttribute('data-status', updates.status);
+    }
+  }
+
+  updateFileStatus(fileId, status) {
+    // Update file status in your file list
+    const fileElement = document.querySelector(`[data-file-id="${fileId}"]`);
+    if (fileElement) {
+      fileElement.setAttribute('data-status', status);
+    }
+  }
+
+  incrementFileCounter(direction) {
+    // Update dashboard counters
+    const counterElement = document.querySelector(`#${direction.toLowerCase()}-count`);
+    if (counterElement) {
+      const currentCount = parseInt(counterElement.textContent) || 0;
+      counterElement.textContent = currentCount + 1;
+    }
+  }
+
+  updateDashboardMetrics(summary) {
+    // Update dashboard summary widgets
+    Object.keys(summary).forEach(key => {
+      const element = document.querySelector(`[data-metric="${key}"]`);
+      if (element) {
+        element.textContent = summary[key];
+      }
+    });
+  }
+
+  showNotification(message, type) {
+    // Implement your notification system
+    console.log(`[${type.toUpperCase()}] ${message}`);
+  }
+
+  isFileListVisible() {
+    // Check if file list is currently visible
+    return document.querySelector('#file-list')?.offsetParent !== null;
+  }
+
+  refreshFileList() {
+    // Trigger file list refresh
+    // This could dispatch a custom event or call a refresh method
+    window.dispatchEvent(new CustomEvent('refreshFileList'));
+  }
+}
+
+// Usage
+const sessionToken = 'admin-session-token';
+const eventManager = new EventStreamManager(sessionToken);
+
+// Start listening to events when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  eventManager.connect();
+});
+
+// Clean up when page unloads
+window.addEventListener('beforeunload', () => {
+  eventManager.disconnect();
+});
+
+// Reconnect when page becomes visible again (handles tab switching)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && (!eventManager.eventSource || eventManager.eventSource.readyState === EventSource.CLOSED)) {
+    eventManager.connect();
+  }
+});
 ```
 
 ### Error Handling Example
