@@ -114,3 +114,6 @@ static async Task SeedSampleData(TradingPartnerPortalDbContext context)
     // Implementation will be added in the next iteration
     await Task.CompletedTask;
 }
+
+// Make Program class accessible for testing
+public partial class Program { }

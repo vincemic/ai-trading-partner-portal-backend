@@ -1,0 +1,344 @@
+using System.Net;
+using FluentAssertions;
+using TradingPartnerPortal.Application.DTOs;
+using TradingPartnerPortal.Domain.Entities;
+using TradingPartnerPortal.Domain.Enums;
+using TradingPartnerPortal.Infrastructure.Authentication;
+
+namespace TradingPartnerPortal.IntegrationTests.Controllers;
+
+public class SftpControllerTests : IntegrationTestBase
+{
+    private readonly Guid _testPartnerId = Guid.NewGuid();
+    private string _adminSessionToken = string.Empty;
+    private string _userSessionToken = string.Empty;
+
+    public SftpControllerTests(TestApplicationFactory factory) : base(factory)
+    {
+    }
+
+    protected override async Task SeedTestDataAsync()
+    {
+        // Create admin session
+        var adminLoginRequest = new FakeAuthenticationService.FakeLoginRequest
+        {
+            UserId = "admin-user",
+            PartnerId = _testPartnerId.ToString(),
+            Role = "PartnerAdmin"
+        };
+
+        var adminLoginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(adminLoginRequest));
+        var adminLogin = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(adminLoginResponse);
+        _adminSessionToken = adminLogin.SessionToken;
+
+        // Create regular user session
+        var userLoginRequest = new FakeAuthenticationService.FakeLoginRequest
+        {
+            UserId = "regular-user",
+            PartnerId = _testPartnerId.ToString(),
+            Role = "PartnerUser"
+        };
+
+        var userLoginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(userLoginRequest));
+        var userLogin = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(userLoginResponse);
+        _userSessionToken = userLogin.SessionToken;
+
+        // Set admin token by default
+        SetAuthenticationToken(_adminSessionToken);
+
+        // Seed test data
+        await Factory.SeedTestDataAsync(context =>
+        {
+            // Add test partner
+            var partner = new Partner
+            {
+                PartnerId = _testPartnerId,
+                Name = "Test Partner",
+                Status = PartnerStatus.Active,
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            };
+            context.Partners.Add(partner);
+
+            // Add SFTP credential
+            var sftpCredential = new SftpCredential
+            {
+                PartnerId = _testPartnerId,
+                PasswordHash = "hashed-password", // This would be properly hashed in real implementation
+                PasswordSalt = "salt",
+                LastRotatedAt = DateTime.UtcNow.AddDays(-10),
+                RotationMethod = PasswordRotationMethod.Manual
+            };
+            context.SftpCredentials.Add(sftpCredential);
+        });
+    }
+
+    [Fact]
+    public async Task GetCredentialMetadata_WithValidSession_ReturnsMetadata()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+
+        // Act
+        var response = await Client.GetAsync("/api/sftp/credential");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var metadata = await GetResponseContentAsync<SftpCredentialMetadataDto>(response);
+        metadata.Should().NotBeNull();
+        metadata.LastRotatedAt.Should().NotBeNullOrEmpty();
+        metadata.RotationMethod.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task GetCredentialMetadata_WithRegularUserSession_ReturnsMetadata()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        SetAuthenticationToken(_userSessionToken);
+
+        // Act
+        var response = await Client.GetAsync("/api/sftp/credential");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var metadata = await GetResponseContentAsync<SftpCredentialMetadataDto>(response);
+        metadata.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task GetCredentialMetadata_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Act
+        var response = await Client.GetAsync("/api/sftp/credential");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetCredentialMetadata_WithNonexistentCredential_ReturnsNotFound()
+    {
+        // Arrange - don't seed SFTP credential data
+        var loginRequest = new FakeAuthenticationService.FakeLoginRequest
+        {
+            UserId = "admin-user",
+            PartnerId = Guid.NewGuid().ToString(), // Different partner ID
+            Role = "PartnerAdmin"
+        };
+
+        var loginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(loginRequest));
+        var login = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(loginResponse);
+        SetAuthenticationToken(login.SessionToken);
+
+        // Act
+        var response = await Client.GetAsync("/api/sftp/credential");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithManualModeAndAdminRole_ReturnsNewPassword()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "manual",
+            NewPassword = "new-secure-password-123!"
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var result = await GetResponseContentAsync<RotatePasswordResponse>(response);
+        result.Should().NotBeNull();
+        result.Password.Should().Be(request.NewPassword);
+        result.Metadata.Should().NotBeNull();
+        result.Metadata.LastRotatedAt.Should().NotBeNullOrEmpty();
+        result.Metadata.RotationMethod.Should().Be("manual");
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithAutoModeAndAdminRole_ReturnsGeneratedPassword()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "auto"
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var result = await GetResponseContentAsync<RotatePasswordResponse>(response);
+        result.Should().NotBeNull();
+        result.Password.Should().NotBeNullOrEmpty();
+        result.Password.Should().NotBe(request.NewPassword); // Should be auto-generated
+        result.Metadata.Should().NotBeNull();
+        result.Metadata.RotationMethod.Should().Be("auto");
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithRegularUserRole_ReturnsForbidden()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        SetAuthenticationToken(_userSessionToken);
+        
+        var request = new RotatePasswordRequest
+        {
+            Mode = "manual",
+            NewPassword = "new-password"
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "manual",
+            NewPassword = "new-password"
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithInvalidMode_ReturnsBadRequest()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "invalid-mode",
+            NewPassword = "new-password"
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithManualModeButNoPassword_ReturnsBadRequest()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "manual"
+            // NewPassword intentionally not set
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("123")] // Too short
+    [InlineData("password")] // Too simple
+    public async Task RotatePassword_WithWeakPassword_ReturnsBadRequest(string weakPassword)
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "manual",
+            NewPassword = weakPassword
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task RotatePassword_WithEmptyMode_ReturnsBadRequest()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+        var request = new RotatePasswordRequest
+        {
+            Mode = "",
+            NewPassword = "valid-password-123!"
+        };
+
+        // Act
+        var response = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(request));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task RotatePassword_MultipleRotations_UpdatesMetadata()
+    {
+        // Arrange
+        await SeedTestDataAsync();
+
+        // First rotation
+        var firstRequest = new RotatePasswordRequest
+        {
+            Mode = "manual",
+            NewPassword = "first-password-123!"
+        };
+
+        var firstResponse = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(firstRequest));
+        var firstResult = await GetResponseContentAsync<RotatePasswordResponse>(firstResponse);
+        var firstRotationTime = firstResult.Metadata.LastRotatedAt;
+
+        // Wait a moment to ensure different timestamps
+        await Task.Delay(1000);
+
+        // Second rotation
+        var secondRequest = new RotatePasswordRequest
+        {
+            Mode = "auto"
+        };
+
+        // Act
+        var secondResponse = await Client.PostAsync("/api/sftp/credential/rotate", CreateJsonContent(secondRequest));
+
+        // Assert
+        secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var secondResult = await GetResponseContentAsync<RotatePasswordResponse>(secondResponse);
+        secondResult.Metadata.LastRotatedAt.Should().NotBe(firstRotationTime);
+        secondResult.Metadata.RotationMethod.Should().Be("auto");
+        secondResult.Password.Should().NotBe(firstRequest.NewPassword);
+    }
+}
