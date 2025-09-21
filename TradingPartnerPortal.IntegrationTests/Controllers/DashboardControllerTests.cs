@@ -8,73 +8,15 @@ namespace TradingPartnerPortal.IntegrationTests.Controllers;
 
 public class DashboardControllerTests : IntegrationTestBase
 {
-    // Use the default test partner ID that matches the middleware
-    private readonly Guid _testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-
     public DashboardControllerTests(TestApplicationFactory factory) : base(factory)
     {
-    }
-
-    protected override async Task SeedTestDataAsync()
-    {
-        // Set user authentication for seeding
-        SetUserAuthentication();
-
-        // Seed test data
-        await Factory.SeedTestDataAsync(context =>
-        {
-            // Add test partner
-            var partner = new Partner
-            {
-                PartnerId = _testPartnerId,
-                Name = "Test Partner",
-                Status = PartnerStatus.Active,
-                CreatedAt = DateTime.UtcNow.AddDays(-30)
-            };
-            context.Partners.Add(partner);
-
-            // Add some test file events
-            var baseTime = DateTime.UtcNow.AddHours(-12);
-
-            for (int i = 0; i < 10; i++)
-            {
-                var fileEvent = new FileTransferEvent
-                {
-                    FileId = Guid.NewGuid(),
-                    PartnerId = _testPartnerId,
-                    DocType = $"test-file-{i}.txt",
-                    Direction = i % 2 == 0 ? FileDirection.Inbound : FileDirection.Outbound,
-                    Status = i < 8 ? FileStatus.Success : FileStatus.Failed,
-                    SizeBytes = 1000 + (i * 100),
-                    ReceivedAt = baseTime.AddHours(i),
-                    ProcessedAt = i < 8 ? baseTime.AddHours(i).AddMinutes(5) : null,
-                    ErrorMessage = i >= 8 ? "Test error message" : null,
-                    CorrelationId = Guid.NewGuid().ToString()
-                };
-                context.FileTransferEvents.Add(fileEvent);
-            }
-
-            // Add some SFTP connection events
-            for (int i = 0; i < 5; i++)
-            {
-                var connectionEvent = new SftpConnectionEvent
-                {
-                    EventId = Guid.NewGuid(),
-                    PartnerId = _testPartnerId,
-                    Outcome = i < 4 ? ConnectionOutcome.Success : ConnectionOutcome.Failed,
-                    OccurredAt = baseTime.AddHours(i * 2),
-                    ConnectionTimeMs = 100 + (i * 50)
-                };
-                context.SftpConnectionEvents.Add(connectionEvent);
-            }
-        });
     }
 
     [Fact]
     public async Task GetSummary_WithValidSession_ReturnsDashboardSummary()
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
 
         // Act
         var response = await Client.GetAsync("/api/dashboard/summary");
@@ -108,8 +50,8 @@ public class DashboardControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetTimeSeries_WithValidSession_ReturnsTimeSeriesData()
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
 
         // Act
         var response = await Client.GetAsync("/api/dashboard/timeseries");
@@ -126,8 +68,8 @@ public class DashboardControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetTimeSeries_WithCustomDateRange_ReturnsFilteredData()
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
         var from = DateTime.UtcNow.AddDays(-1);
         var to = DateTime.UtcNow;
 
@@ -158,8 +100,8 @@ public class DashboardControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetTopErrors_WithValidSession_ReturnsTopErrors()
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
 
         // Act
         var response = await Client.GetAsync("/api/dashboard/errors/top");
@@ -176,8 +118,8 @@ public class DashboardControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetTopErrors_WithCustomParameters_ReturnsFilteredErrors()
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
         var from = DateTime.UtcNow.AddDays(-1);
         var to = DateTime.UtcNow;
         var top = 10;
@@ -212,8 +154,8 @@ public class DashboardControllerTests : IntegrationTestBase
     [InlineData(0)]
     public async Task GetTopErrors_WithInvalidTopParameter_ReturnsDefaultResults(int invalidTop)
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
 
         // Act
         var response = await Client.GetAsync($"/api/dashboard/errors/top?top={invalidTop}");
@@ -232,8 +174,8 @@ public class DashboardControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetTimeSeries_WithInvalidDateRange_ReturnsAppropriateResponse()
     {
-        // Arrange
-        await SeedTestDataAsync();
+        // Arrange - Use middleware-seeded data
+        SetUserAuthentication();
         var from = DateTime.UtcNow;
         var to = DateTime.UtcNow.AddDays(-1); // 'to' is before 'from'
 

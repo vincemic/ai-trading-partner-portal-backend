@@ -15,6 +15,8 @@ namespace TradingPartnerPortal.IntegrationTests;
 /// </summary>
 public class TestApplicationFactory : WebApplicationFactory<Program>
 {
+    private static readonly string SharedDatabaseName = "SharedTestDb";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -28,10 +30,10 @@ public class TestApplicationFactory : WebApplicationFactory<Program>
             }
 
             // Add a database context using a shared in-memory database for all tests
-            // Using a shared database name ensures all tests use the same database instance
+            // This ensures the middleware-seeded data is available to all tests
             services.AddDbContext<TradingPartnerPortalDbContext>(options =>
             {
-                options.UseInMemoryDatabase("SharedTestDb");
+                options.UseInMemoryDatabase(SharedDatabaseName);
             });
 
             // Ensure FakeAuthenticationService is registered as singleton for the test environment

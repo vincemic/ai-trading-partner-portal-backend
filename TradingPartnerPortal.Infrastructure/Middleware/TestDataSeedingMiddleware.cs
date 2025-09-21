@@ -19,7 +19,7 @@ public class TestDataSeedingMiddleware
     private static readonly object _seedLock = new();
 
     public TestDataSeedingMiddleware(
-        RequestDelegate next, 
+        RequestDelegate next,
         ILogger<TestDataSeedingMiddleware> logger)
     {
         _next = next;
@@ -52,15 +52,15 @@ public class TestDataSeedingMiddleware
 
             _logger.LogInformation("Seeding test data for testing environment");
 
-            // Check if data already exists
-            if (dbContext.Partners.Any())
+            // Check if our specific test data already exists
+            var testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            if (dbContext.Partners.Any(p => p.PartnerId == testPartnerId))
             {
                 _logger.LogInformation("Test data already exists, skipping seeding");
                 return;
             }
 
             // Seed test partners
-            var testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var testPartner = new Partner
             {
                 PartnerId = testPartnerId,
@@ -128,10 +128,18 @@ public class TestDataSeedingMiddleware
             };
             dbContext.SftpCredentials.Add(sftpCredential);
 
-            await dbContext.SaveChangesAsync();
-
-            _logger.LogInformation("Successfully seeded test data: {PartnerCount} partners, {KeyCount} keys, {CredentialCount} SFTP credentials",
-                2, 2, 1);
+            try
+            {
+                await dbContext.SaveChangesAsync();
+                _logger.LogInformation("Successfully seeded test data: {PartnerCount} partners, {KeyCount} keys, {CredentialCount} SFTP credentials",
+                    2, 2, 1);
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("An item with the same key has already been added"))
+            {
+                // Handle concurrent seeding gracefully - data already exists
+                _logger.LogInformation("Test data was already seeded by another request, skipping");
+                return;
+            }
         }
         catch (Exception ex)
         {
