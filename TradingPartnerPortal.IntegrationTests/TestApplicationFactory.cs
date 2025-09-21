@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TradingPartnerPortal.Infrastructure.Data;
 using TradingPartnerPortal.Infrastructure.Authentication;
+using TradingPartnerPortal.Infrastructure.Middleware;
 
 namespace TradingPartnerPortal.IntegrationTests;
 
@@ -26,10 +27,11 @@ public class TestApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
-            // Add a database context using a unique in-memory database for each test
+            // Add a database context using a shared in-memory database for all tests
+            // Using a shared database name ensures all tests use the same database instance
             services.AddDbContext<TradingPartnerPortalDbContext>(options =>
             {
-                options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}");
+                options.UseInMemoryDatabase("SharedTestDb");
             });
 
             // Ensure FakeAuthenticationService is registered as singleton for the test environment

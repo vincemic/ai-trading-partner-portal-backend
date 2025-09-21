@@ -15,42 +15,11 @@ public class SftpControllerTests : IntegrationTestBase
     {
     }
 
-    protected override async Task SeedTestDataAsync()
-    {
-        // Set admin authentication by default for seeding
-        SetAdminAuthentication();
-
-        // Seed test data
-        await Factory.SeedTestDataAsync(context =>
-        {
-            // Add test partner
-            var partner = new Partner
-            {
-                PartnerId = _testPartnerId,
-                Name = "Test Partner",
-                Status = PartnerStatus.Active,
-                CreatedAt = DateTime.UtcNow.AddDays(-30)
-            };
-            context.Partners.Add(partner);
-
-            // Add SFTP credential
-            var sftpCredential = new SftpCredential
-            {
-                PartnerId = _testPartnerId,
-                PasswordHash = "hashed-password", // This would be properly hashed in real implementation
-                PasswordSalt = "salt",
-                LastRotatedAt = DateTime.UtcNow.AddDays(-10),
-                RotationMethod = PasswordRotationMethod.Manual
-            };
-            context.SftpCredentials.Add(sftpCredential);
-        });
-    }
-
     [Fact]
     public async Task GetCredentialMetadata_WithValidSession_ReturnsMetadata()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
 
         // Act
         var response = await Client.GetAsync("/api/sftp/credential");
@@ -68,8 +37,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task GetCredentialMetadata_WithRegularUserSession_ReturnsMetadata()
     {
         // Arrange
-        await SeedTestDataAsync();
-        SetUserAuthentication();
+        SetUserAuthentication(); // Ensure user auth
 
         // Act
         var response = await Client.GetAsync("/api/sftp/credential");
@@ -112,7 +80,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithManualModeAndAdminRole_ReturnsNewPassword()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RotatePasswordRequest
         {
             Mode = "manual",
@@ -137,7 +105,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithAutoModeAndAdminRole_ReturnsGeneratedPassword()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RotatePasswordRequest
         {
             Mode = "auto"
@@ -161,7 +129,6 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithRegularUserRole_ReturnsForbidden()
     {
         // Arrange
-        await SeedTestDataAsync();
         SetUserAuthentication();
 
         var request = new RotatePasswordRequest
@@ -199,7 +166,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithInvalidMode_ReturnsBadRequest()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RotatePasswordRequest
         {
             Mode = "invalid-mode",
@@ -217,7 +184,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithManualModeButNoPassword_ReturnsBadRequest()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RotatePasswordRequest
         {
             Mode = "manual"
@@ -238,7 +205,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithWeakPassword_ReturnsBadRequest(string weakPassword)
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RotatePasswordRequest
         {
             Mode = "manual",
@@ -256,7 +223,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_WithEmptyMode_ReturnsBadRequest()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RotatePasswordRequest
         {
             Mode = "",
@@ -274,7 +241,7 @@ public class SftpControllerTests : IntegrationTestBase
     public async Task RotatePassword_MultipleRotations_UpdatesMetadata()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
 
         // First rotation
         var firstRequest = new RotatePasswordRequest

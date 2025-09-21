@@ -10,71 +10,20 @@ public class KeysControllerTests : IntegrationTestBase
 {
     // Use the default test partner ID that matches the middleware
     private readonly Guid _testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    private readonly Guid _testKeyId = Guid.NewGuid();
+    
+    // Use the known test key IDs that are seeded by the middleware
+    private readonly Guid _primaryTestKeyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private readonly Guid _secondaryTestKeyId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     public KeysControllerTests(TestApplicationFactory factory) : base(factory)
     {
-    }
-
-    protected override async Task SeedTestDataAsync()
-    {
-        // Set admin authentication by default for seeding
-        SetAdminAuthentication();
-
-        // Seed test data
-        await Factory.SeedTestDataAsync(context =>
-        {
-            // Add test partner
-            var partner = new Partner
-            {
-                PartnerId = _testPartnerId,
-                Name = "Test Partner",
-                Status = PartnerStatus.Active,
-                CreatedAt = DateTime.UtcNow.AddDays(-30)
-            };
-            context.Partners.Add(partner);
-
-            // Add test PGP key
-            var pgpKey = new PgpKey
-            {
-                KeyId = _testKeyId,
-                PartnerId = _testPartnerId,
-                Fingerprint = "1234567890ABCDEF1234567890ABCDEF12345678",
-                Algorithm = "RSA",
-                KeySize = 2048,
-                PublicKeyArmored = "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nTest public key content\n\n-----END PGP PUBLIC KEY BLOCK-----",
-                CreatedAt = DateTime.UtcNow.AddDays(-10),
-                ValidFrom = DateTime.UtcNow.AddDays(-10),
-                ValidTo = DateTime.UtcNow.AddDays(365),
-                Status = PgpKeyStatus.Active,
-                IsPrimary = true
-            };
-            context.PgpKeys.Add(pgpKey);
-
-            // Add a second key (not primary)
-            var secondKey = new PgpKey
-            {
-                KeyId = Guid.NewGuid(),
-                PartnerId = _testPartnerId,
-                Fingerprint = "ABCDEF1234567890ABCDEF1234567890ABCDEF12",
-                Algorithm = "RSA",
-                KeySize = 4096,
-                PublicKeyArmored = "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nTest public key content 2\n\n-----END PGP PUBLIC KEY BLOCK-----",
-                CreatedAt = DateTime.UtcNow.AddDays(-5),
-                ValidFrom = DateTime.UtcNow.AddDays(-5),
-                ValidTo = DateTime.UtcNow.AddDays(365),
-                Status = PgpKeyStatus.Active,
-                IsPrimary = false
-            };
-            context.PgpKeys.Add(secondKey);
-        });
     }
 
     [Fact]
     public async Task ListKeys_WithValidSession_ReturnsKeys()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
 
         // Act
         var response = await Client.GetAsync("/api/keys");
@@ -88,14 +37,13 @@ public class KeysControllerTests : IntegrationTestBase
 
         var primaryKey = keys.FirstOrDefault(k => k.IsPrimary);
         primaryKey.Should().NotBeNull();
-        primaryKey!.KeyId.Should().Be(_testKeyId.ToString());
+        primaryKey!.KeyId.Should().Be(_primaryTestKeyId.ToString());
     }
 
     [Fact]
     public async Task ListKeys_WithRegularUserSession_ReturnsKeys()
     {
         // Arrange
-        await SeedTestDataAsync();
         SetUserAuthentication();
 
         // Act
@@ -125,7 +73,7 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task UploadKey_WithValidRequestAndAdminRole_ReturnsNewKey()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new UploadKeyRequest
         {
             PublicKeyArmored = "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nNew test key content\n\n-----END PGP PUBLIC KEY BLOCK-----",
@@ -151,7 +99,6 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task UploadKey_WithRegularUserRole_ReturnsForbidden()
     {
         // Arrange
-        await SeedTestDataAsync();
         SetUserAuthentication();
 
         var request = new UploadKeyRequest
@@ -171,7 +118,7 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task UploadKey_WithInvalidKeyFormat_ReturnsBadRequest()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication();
         var request = new UploadKeyRequest
         {
             PublicKeyArmored = "invalid-key-format",
@@ -189,7 +136,7 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task GenerateKey_WithValidRequestAndAdminRole_ReturnsNewKeyPair()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new GenerateKeyRequest
         {
             ValidFrom = DateTime.UtcNow.ToString("O"),
@@ -215,7 +162,6 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task GenerateKey_WithRegularUserRole_ReturnsForbidden()
     {
         // Arrange
-        await SeedTestDataAsync();
         SetUserAuthentication();
 
         var request = new GenerateKeyRequest
@@ -234,14 +180,14 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task RevokeKey_WithValidKeyAndAdminRole_RevokesKey()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
         var request = new RevokeKeyRequest
         {
             Reason = "Test revocation"
         };
 
         // Act
-        var response = await Client.PostAsync($"/api/keys/{_testKeyId}/revoke", CreateJsonContent(request));
+        var response = await Client.PostAsync($"/api/keys/{_primaryTestKeyId}/revoke", CreateJsonContent(request));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -255,7 +201,6 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task RevokeKey_WithRegularUserRole_ReturnsForbidden()
     {
         // Arrange
-        await SeedTestDataAsync();
         SetUserAuthentication();
 
         var request = new RevokeKeyRequest
@@ -264,7 +209,7 @@ public class KeysControllerTests : IntegrationTestBase
         };
 
         // Act
-        var response = await Client.PostAsync($"/api/keys/{_testKeyId}/revoke", CreateJsonContent(request));
+        var response = await Client.PostAsync($"/api/keys/{_primaryTestKeyId}/revoke", CreateJsonContent(request));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -274,7 +219,7 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task RevokeKey_WithNonexistentKey_ReturnsNotFound()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication();
         var nonexistentKeyId = Guid.NewGuid();
         var request = new RevokeKeyRequest
         {
@@ -292,21 +237,13 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task PromoteKey_WithValidKeyAndAdminRole_PromotesKey()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication();
 
-        // Get a non-primary key to promote
-        var keysResponse = await Client.GetAsync("/api/keys");
-        var keys = await GetResponseContentAsync<List<KeySummaryDto>>(keysResponse);
-        var nonPrimaryKey = keys.FirstOrDefault(k => !k.IsPrimary);
-
-        if (nonPrimaryKey == null)
-        {
-            // Skip test if no non-primary key exists
-            return;
-        }
+        // Use the secondary key ID to test promotion
+        var keyToPromote = _secondaryTestKeyId;
 
         // Act
-        var response = await Client.PostAsync($"/api/keys/{nonPrimaryKey.KeyId}/promote", CreateJsonContent(new { }));
+        var response = await Client.PostAsync($"/api/keys/{keyToPromote}/promote", CreateJsonContent(new { }));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -319,11 +256,10 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task PromoteKey_WithRegularUserRole_ReturnsForbidden()
     {
         // Arrange
-        await SeedTestDataAsync();
         SetUserAuthentication();
 
         // Act
-        var response = await Client.PostAsync($"/api/keys/{_testKeyId}/promote", CreateJsonContent(new { }));
+        var response = await Client.PostAsync($"/api/keys/{_primaryTestKeyId}/promote", CreateJsonContent(new { }));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -333,7 +269,7 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task PromoteKey_WithNonexistentKey_ReturnsNotFound()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication();
         var nonexistentKeyId = Guid.NewGuid();
 
         // Act
@@ -347,10 +283,10 @@ public class KeysControllerTests : IntegrationTestBase
     public async Task PromoteKey_WithAlreadyPrimaryKey_ReturnsSuccessMessage()
     {
         // Arrange
-        await SeedTestDataAsync();
+        SetAdminAuthentication(); // Ensure admin auth
 
         // Act
-        var response = await Client.PostAsync($"/api/keys/{_testKeyId}/promote", CreateJsonContent(new { }));
+        var response = await Client.PostAsync($"/api/keys/{_primaryTestKeyId}/promote", CreateJsonContent(new { }));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);

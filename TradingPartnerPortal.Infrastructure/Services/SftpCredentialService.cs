@@ -37,8 +37,8 @@ public class SftpCredentialService : ISftpCredentialService
     }
 
     public async Task<(RotatePasswordResponse response, AuditEvent audit)> RotateAsync(
-        Guid partnerId, 
-        RotatePasswordRequest request, 
+        Guid partnerId,
+        RotatePasswordRequest request,
         UserContext user)
     {
         string newPassword;

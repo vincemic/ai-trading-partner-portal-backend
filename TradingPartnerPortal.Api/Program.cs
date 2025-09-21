@@ -94,6 +94,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors();
 
+// Use test data seeding middleware in testing environment
+if (app.Environment.EnvironmentName == "Testing")
+{
+    app.UseMiddleware<TestDataSeedingMiddleware>();
+}
+
 // Use fake authentication middleware
 app.UseMiddleware<FakeAuthenticationMiddleware>();
 

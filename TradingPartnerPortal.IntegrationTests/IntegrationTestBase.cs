@@ -91,16 +91,6 @@ public abstract class IntegrationTestBase : IClassFixture<TestApplicationFactory
         return await GetResponseContentAsync<T>(response);
     }
 
-    /// <summary>
-    /// Seeds test data into the database before running tests.
-    /// Override this method in derived classes to provide specific test data.
-    /// </summary>
-    protected virtual async Task SeedTestDataAsync()
-    {
-        // Default implementation - override in derived classes if needed
-        await Task.CompletedTask;
-    }
-
     public virtual void Dispose()
     {
         if (!_disposed)

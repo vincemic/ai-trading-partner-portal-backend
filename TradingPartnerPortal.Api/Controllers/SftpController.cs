@@ -27,7 +27,7 @@ public class SftpController : ControllerBase
         {
             var userContext = this.GetUserContext();
             var metadata = await _sftpService.GetMetadataAsync(userContext.PartnerId);
-            
+
             if (metadata == null)
             {
                 return NotFound(new { error = new { code = "NOT_FOUND", message = "No SFTP credential found", traceId = Activity.Current?.TraceId.ToString() } });
@@ -50,7 +50,7 @@ public class SftpController : ControllerBase
         try
         {
             var userContext = this.GetUserContext();
-            
+
             if (userContext.Role != "PartnerAdmin")
             {
                 return StatusCode(403, new { error = "Forbidden", message = "Only PartnerAdmin can rotate passwords" });
