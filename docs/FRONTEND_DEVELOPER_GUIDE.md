@@ -342,15 +342,25 @@ GET /api/events/stream
 
 Establishes a Server-Sent Events connection for real-time notifications about key operations and system events.
 
-**Headers Required:**
+**Authentication Methods:**
 
-- `X-Session-Token`: Valid session token
-- `Accept: text/event-stream` (recommended)
-- `Cache-Control: no-cache` (recommended)
+1. **Header Authentication (for REST clients):**
+   - `X-Session-Token`: Valid session token
+
+2. **Query Parameter Authentication (for EventSource/browsers):**
+   - `?token=<session-token>`: Valid session token as query parameter
+   - **Recommended for EventSource**: Native JavaScript EventSource doesn't support custom headers
 
 **Optional Headers:**
 
+- `Accept: text/event-stream` (recommended)
+- `Cache-Control: no-cache` (recommended)
 - `Last-Event-ID`: Resume from specific event sequence (for reconnection)
+
+**Query Parameters:**
+
+- `token`: Session token for authentication (alternative to header)
+- `lastEventId`: Resume from specific event sequence (alternative to header)
 
 **Response Format:**
 
@@ -436,13 +446,10 @@ The SSE stream delivers these event types:
 #### Implementation Example
 
 ```javascript
-// Establish SSE connection
+// Establish SSE connection with query parameter authentication
+// Note: EventSource doesn't support custom headers in most browsers
 function connectToEventStream() {
-  const eventSource = new EventSource('/api/events/stream', {
-    headers: {
-      'X-Session-Token': sessionToken
-    }
-  });
+  const eventSource = new EventSource(`/api/events/stream?token=${sessionToken}`);
 
   // Handle key promotion events
   eventSource.addEventListener('key.promoted', (event) => {
@@ -485,9 +492,14 @@ function connectToEventStream() {
   return eventSource;
 }
 
-// Reconnection with event replay
+// Reconnection with event replay using query parameters
 function reconnectWithReplay() {
   const lastEventId = localStorage.getItem('lastEventId');
+  let url = `/api/events/stream?token=${sessionToken}`;
+  if (lastEventId) {
+    url += `&lastEventId=${lastEventId}`;
+  }
+  const eventSource = new EventSource(url);
   const url = lastEventId 
     ? `/api/events/stream?lastEventId=${lastEventId}`
     : '/api/events/stream';
@@ -523,6 +535,13 @@ function reconnectWithReplay() {
 - Close connections when navigating away from pages that need real-time updates
 - Use heartbeat events to detect broken connections
 
+**Browser Compatibility & Authentication:**
+
+- **EventSource Limitation**: Native JavaScript EventSource doesn't support custom headers in most browsers
+- **Solution**: Use query parameter authentication (`?token=sessionToken`) for maximum compatibility
+- **Development Proxies**: Query parameters work seamlessly with webpack dev server, Vite, and other proxy configurations
+- **CORS-Friendly**: Query parameters don't trigger preflight requests like custom headers
+
 **Error Handling:**
 
 ```javascript
@@ -539,8 +558,23 @@ eventSource.addEventListener('error', (event) => {
 **Authentication:**
 
 - SSE connections respect the same authentication requirements as REST endpoints
-- Include session token in connection headers
+- **Recommended**: Use query parameter authentication for EventSource compatibility
+
+  ```javascript
+  const eventSource = new EventSource(`/api/events/stream?token=${sessionToken}`);
+  ```
+
+- **Alternative**: Header authentication (for custom HTTP clients, not EventSource)
+
+  ```javascript
+  // Note: This doesn't work with native EventSource in most browsers
+  fetch('/api/events/stream', {
+    headers: { 'X-Session-Token': sessionToken }
+  });
+  ```
+
 - Handle 401/403 errors by redirecting to login
+- **Proxy-friendly**: Query parameters work seamlessly with development proxies
 
 ### PGP Key Management
 
@@ -777,12 +811,26 @@ The system recognizes these predefined test tokens:
 
 #### Using Session Tokens
 
-Include any of the predefined session tokens in the `X-Session-Token` header for all protected endpoints:
+The API supports two authentication methods to accommodate different client types:
+
+**1. Header Authentication (Recommended for REST API calls):**
 
 ```http
 GET /api/dashboard/summary
 X-Session-Token: admin-session-token
 ```
+
+**2. Query Parameter Authentication (Required for Server-Sent Events):**
+
+```http
+GET /api/events/stream?token=admin-session-token
+```
+
+**When to use each method:**
+
+- **Header authentication**: Use for all REST API calls (dashboard, keys, SFTP operations)
+- **Query parameter authentication**: Use for SSE connections (`/api/events/stream`) due to EventSource browser limitations
+- **Backwards compatibility**: The API accepts both methods for all endpoints, with header authentication taking precedence
 
 **No login endpoint required** - just use the predefined tokens directly.
 
@@ -1053,17 +1101,15 @@ class EventStreamManager {
   }
 
   connect() {
-    // Build URL with Last-Event-ID if available
-    let url = '/api/events/stream';
+    // Build URL with authentication token and Last-Event-ID if available
+    let url = `/api/events/stream?token=${this.sessionToken}`;
     if (this.lastEventId) {
-      url += `?lastEventId=${this.lastEventId}`;
+      url += `&lastEventId=${this.lastEventId}`;
     }
 
-    this.eventSource = new EventSource(url, {
-      headers: {
-        'X-Session-Token': this.sessionToken
-      }
-    });
+    // Note: Using query parameter authentication because EventSource
+    // doesn't support custom headers in most browsers
+    this.eventSource = new EventSource(url);
 
     // Set up event listeners
     this.setupEventListeners();

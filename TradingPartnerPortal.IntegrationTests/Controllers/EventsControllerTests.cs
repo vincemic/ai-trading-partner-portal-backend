@@ -288,4 +288,200 @@ public class EventsControllerTests : IntegrationTestBase
         content.Should().MatchRegex(@"id: 3\n");
         content.Should().MatchRegex(@"id: 4\n");
     }
+
+    #region Query Parameter Authentication Tests
+
+    [Fact]
+    public async Task Stream_WithQueryParameterAuth_EstablishesConnection()
+    {
+        // Arrange - Clear header auth and use query parameter instead
+        ClearAuthenticationToken();
+
+        // Act
+        var response = await Client.GetAsync("/api/events/stream?token=admin-session-token");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("text/event-stream");
+        response.Headers.CacheControl?.NoCache.Should().BeTrue();
+        response.Headers.Connection.Should().Contain("keep-alive");
+    }
+
+    [Fact]
+    public async Task Stream_WithQueryParameterAuth_ReceivesEvents()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Publish a test event
+        using var scope = Factory.Services.CreateScope();
+        var sseService = scope.ServiceProvider.GetRequiredService<ISseEventService>();
+
+        var testData = new FileCreatedEventData
+        {
+            FileId = "query-auth-test-file",
+            Direction = "Inbound",
+            DocType = "850"
+        };
+
+        sseService.PublishPartnerEvent(_testPartnerId, "file.created", testData);
+
+        // Act - Use query parameter authentication
+        using var response = await Client.GetAsync("/api/events/stream?token=admin-session-token");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var stream = await response.Content.ReadAsStreamAsync();
+        var buffer = new byte[2048];
+        var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+        var content = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+        content.Should().Contain("event: file.created");
+        content.Should().Contain("query-auth-test-file");
+        content.Should().Contain("Inbound");
+        content.Should().Contain("850");
+    }
+
+    [Fact]
+    public async Task Stream_WithQueryParameterAndLastEventId_ReplaysMissedEvents()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Publish some events first
+        using var scope = Factory.Services.CreateScope();
+        var sseService = scope.ServiceProvider.GetRequiredService<ISseEventService>();
+
+        var testData1 = new FileCreatedEventData { FileId = "query-file-1", Direction = "Inbound", DocType = "850" };
+        var testData2 = new FileCreatedEventData { FileId = "query-file-2", Direction = "Outbound", DocType = "810" };
+
+        sseService.PublishPartnerEvent(_testPartnerId, "file.created", testData1);
+        sseService.PublishPartnerEvent(_testPartnerId, "file.created", testData2);
+
+        // Act - Use query parameter auth with Last-Event-ID
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/events/stream?token=admin-session-token");
+        request.Headers.Add("Last-Event-ID", "1");
+
+        using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var stream = await response.Content.ReadAsStreamAsync();
+        var buffer = new byte[2048];
+        var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+        var content = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+        // Should replay events after sequence 1
+        content.Should().Contain("query-file-2");
+        content.Should().MatchRegex(@"id: 2\n"); // Should start from sequence 2
+    }
+
+    [Fact]
+    public async Task Stream_WithInvalidQueryParameterToken_ReturnsUnauthorized()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Act
+        var response = await Client.GetAsync("/api/events/stream?token=invalid-token");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Stream_WithEmptyQueryParameterToken_ReturnsUnauthorized()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Act
+        var response = await Client.GetAsync("/api/events/stream?token=");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Stream_WithMissingTokenInBothHeaderAndQuery_ReturnsUnauthorized()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Act
+        var response = await Client.GetAsync("/api/events/stream");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Stream_HeaderTokenTakesPrecedenceOverQueryToken()
+    {
+        // Arrange - Set a valid header token and invalid query token
+        SetAdminAuthentication(); // Sets valid header token
+
+        // Publish test event to verify we're authenticated as the header token user
+        using var scope = Factory.Services.CreateScope();
+        var sseService = scope.ServiceProvider.GetRequiredService<ISseEventService>();
+
+        var testData = new FileCreatedEventData
+        {
+            FileId = "precedence-test-file",
+            Direction = "Inbound",
+            DocType = "850"
+        };
+
+        sseService.PublishPartnerEvent(_testPartnerId, "file.created", testData);
+
+        // Act - Use valid header auth but invalid query parameter
+        var response = await Client.GetAsync("/api/events/stream?token=invalid-token");
+
+        // Assert - Should succeed because header token takes precedence
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var stream = await response.Content.ReadAsStreamAsync();
+        var buffer = new byte[1024];
+        var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+        var content = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+        content.Should().Contain("precedence-test-file");
+    }
+
+    [Fact]
+    public async Task Stream_QueryParameterAuth_SupportsUserRoles()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Act - Use user-level token via query parameter
+        var response = await Client.GetAsync("/api/events/stream?token=user-session-token");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("text/event-stream");
+    }
+
+    [Fact]
+    public async Task Stream_QueryParameterAuth_WithSpecialCharactersInToken_WorksCorrectly()
+    {
+        // Arrange
+        ClearAuthenticationToken();
+
+        // Test with URL-encoded characters that might appear in real tokens
+        var encodedToken = Uri.EscapeDataString("test-session-token");
+
+        // Act
+        var response = await Client.GetAsync($"/api/events/stream?token={encodedToken}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("text/event-stream");
+    }
+
+    #endregion
 }

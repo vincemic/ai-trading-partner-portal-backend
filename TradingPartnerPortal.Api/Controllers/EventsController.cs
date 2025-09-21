@@ -18,9 +18,12 @@ public class EventsController : ControllerBase
 
     /// <summary>
     /// Server-Sent Events stream endpoint for real-time updates
+    /// Supports authentication via X-Session-Token header or ?token query parameter
     /// </summary>
     [HttpGet("stream")]
-    public async Task Stream([FromHeader(Name = "Last-Event-ID")] string? lastEventId = null)
+    public async Task Stream(
+        [FromHeader(Name = "Last-Event-ID")] string? lastEventId = null,
+        [FromQuery] string? token = null)
     {
         try
         {

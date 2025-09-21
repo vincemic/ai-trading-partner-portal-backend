@@ -25,7 +25,6 @@
 	"csharp.format.enable": true,
 	"csharp.suppressHiddenDiagnostics": false,
 	"omnisharp.enableEditorConfigSupport": true,
-	"omnisharp.enableImportCompletion": true,
 	"omnisharp.enableRoslynAnalyzers": true,
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {

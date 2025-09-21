@@ -26,8 +26,14 @@ public class FakeAuthenticationMiddleware
             return;
         }
 
-        // Extract session token from header
+        // Extract session token from header or query parameter (for SSE compatibility)
         var sessionToken = context.Request.Headers["X-Session-Token"].FirstOrDefault();
+        
+        // Fallback to query parameter for SSE connections (EventSource doesn't support custom headers)
+        if (string.IsNullOrEmpty(sessionToken))
+        {
+            sessionToken = context.Request.Query["token"].FirstOrDefault();
+        }
 
         if (string.IsNullOrEmpty(sessionToken))
         {
