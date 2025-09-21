@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TradingPartnerPortal.Infrastructure.Data;
+using TradingPartnerPortal.Infrastructure.Authentication;
 
 namespace TradingPartnerPortal.IntegrationTests;
 
@@ -30,6 +31,13 @@ public class TestApplicationFactory : WebApplicationFactory<Program>
             {
                 options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}");
             });
+
+            // Ensure FakeAuthenticationService is registered as singleton for the test environment
+            var authDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(FakeAuthenticationService));
+            if (authDescriptor == null)
+            {
+                services.AddSingleton<FakeAuthenticationService>();
+            }
 
             // Suppress logging during tests to reduce noise
             services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning));
