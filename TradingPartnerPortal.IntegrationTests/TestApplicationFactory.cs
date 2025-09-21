@@ -62,7 +62,7 @@ public class TestApplicationFactory : WebApplicationFactory<Program>
     {
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<TradingPartnerPortalDbContext>();
-        
+
         seedAction(context);
         await context.SaveChangesAsync();
     }
