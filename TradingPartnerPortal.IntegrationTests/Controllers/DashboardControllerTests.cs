@@ -35,7 +35,7 @@ public class DashboardControllerTests : IntegrationTestBase
 
             // Add some test file events
             var baseTime = DateTime.UtcNow.AddHours(-12);
-            
+
             for (int i = 0; i < 10; i++)
             {
                 var fileEvent = new FileTransferEvent
@@ -81,7 +81,7 @@ public class DashboardControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var summary = await GetResponseContentAsync<DashboardSummaryDto>(response);
         summary.Should().NotBeNull();
         summary.InboundFiles24h.Should().BeGreaterOrEqualTo(0);
@@ -116,7 +116,7 @@ public class DashboardControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var timeSeries = await GetResponseContentAsync<TimeSeriesResponse>(response);
         timeSeries.Should().NotBeNull();
         timeSeries.Points.Should().NotBeNull();
@@ -136,7 +136,7 @@ public class DashboardControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var timeSeries = await GetResponseContentAsync<TimeSeriesResponse>(response);
         timeSeries.Should().NotBeNull();
         timeSeries.Points.Should().NotBeNull();
@@ -166,7 +166,7 @@ public class DashboardControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var topErrors = await GetResponseContentAsync<TopErrorsResponse>(response);
         topErrors.Should().NotBeNull();
         topErrors.Categories.Should().NotBeNull();
@@ -187,7 +187,7 @@ public class DashboardControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var topErrors = await GetResponseContentAsync<TopErrorsResponse>(response);
         topErrors.Should().NotBeNull();
         topErrors.Categories.Should().NotBeNull();
@@ -221,7 +221,7 @@ public class DashboardControllerTests : IntegrationTestBase
         // Assert
         // The API should handle invalid parameters gracefully
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
-        
+
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var topErrors = await GetResponseContentAsync<TopErrorsResponse>(response);
@@ -243,7 +243,7 @@ public class DashboardControllerTests : IntegrationTestBase
         // Assert
         // The API should handle invalid date ranges gracefully
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
-        
+
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var timeSeries = await GetResponseContentAsync<TimeSeriesResponse>(response);

@@ -57,7 +57,7 @@ public class SftpControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var metadata = await GetResponseContentAsync<SftpCredentialMetadataDto>(response);
         metadata.Should().NotBeNull();
         metadata.LastRotatedAt.Should().NotBeNullOrEmpty();
@@ -76,7 +76,7 @@ public class SftpControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var metadata = await GetResponseContentAsync<SftpCredentialMetadataDto>(response);
         metadata.Should().NotBeNull();
     }
@@ -124,7 +124,7 @@ public class SftpControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var result = await GetResponseContentAsync<RotatePasswordResponse>(response);
         result.Should().NotBeNull();
         result.Password.Should().Be(request.NewPassword);
@@ -148,7 +148,7 @@ public class SftpControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var result = await GetResponseContentAsync<RotatePasswordResponse>(response);
         result.Should().NotBeNull();
         result.Password.Should().NotBeNullOrEmpty();
@@ -163,7 +163,7 @@ public class SftpControllerTests : IntegrationTestBase
         // Arrange
         await SeedTestDataAsync();
         SetUserAuthentication();
-        
+
         var request = new RotatePasswordRequest
         {
             Mode = "manual",
@@ -301,7 +301,7 @@ public class SftpControllerTests : IntegrationTestBase
 
         // Assert
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var secondResult = await GetResponseContentAsync<RotatePasswordResponse>(secondResponse);
         secondResult.Metadata.LastRotatedAt.Should().NotBe(firstRotationTime);
         secondResult.Metadata.RotationMethod.Should().Be("auto");

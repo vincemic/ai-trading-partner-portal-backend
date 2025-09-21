@@ -44,10 +44,10 @@ public class KeysController : ControllerBase
         try
         {
             var userContext = this.GetUserContext();
-            
+
             if (userContext.Role != "PartnerAdmin")
             {
-                return Forbid("Only PartnerAdmin can upload keys");
+                return StatusCode(403, new { error = "Forbidden", message = "Only PartnerAdmin can upload keys" });
             }
 
             var (key, audit) = await _keyService.UploadAsync(userContext.PartnerId, request, userContext);
@@ -76,10 +76,10 @@ public class KeysController : ControllerBase
         try
         {
             var userContext = this.GetUserContext();
-            
+
             if (userContext.Role != "PartnerAdmin")
             {
-                return Forbid("Only PartnerAdmin can generate keys");
+                return StatusCode(403, new { error = "Forbidden", message = "Only PartnerAdmin can generate keys" });
             }
 
             var (response, audit) = await _keyService.GenerateAsync(userContext.PartnerId, request, userContext);
@@ -104,10 +104,10 @@ public class KeysController : ControllerBase
         try
         {
             var userContext = this.GetUserContext();
-            
+
             if (userContext.Role != "PartnerAdmin")
             {
-                return Forbid("Only PartnerAdmin can revoke keys");
+                return StatusCode(403, new { error = "Forbidden", message = "Only PartnerAdmin can revoke keys" });
             }
 
             var audit = await _keyService.RevokeAsync(userContext.PartnerId, keyId, request, userContext);
@@ -136,10 +136,10 @@ public class KeysController : ControllerBase
         try
         {
             var userContext = this.GetUserContext();
-            
+
             if (userContext.Role != "PartnerAdmin")
             {
-                return Forbid("Only PartnerAdmin can promote keys");
+                return StatusCode(403, new { error = "Forbidden", message = "Only PartnerAdmin can promote keys" });
             }
 
             var audit = await _keyService.PromoteAsync(userContext.PartnerId, keyId, userContext);

@@ -19,7 +19,7 @@ public class FakeAuthenticationMiddleware
     {
         // Skip authentication for certain paths
         var path = context.Request.Path.Value?.ToLower() ?? "";
-        
+
         if (ShouldSkipAuthentication(path))
         {
             await _next(context);
@@ -28,7 +28,7 @@ public class FakeAuthenticationMiddleware
 
         // Extract session token from header
         var sessionToken = context.Request.Headers["X-Session-Token"].FirstOrDefault();
-        
+
         if (string.IsNullOrEmpty(sessionToken))
         {
             context.Response.StatusCode = 401;
@@ -58,7 +58,7 @@ public class FakeAuthenticationMiddleware
 
         // Add user context to request
         context.Items["UserContext"] = userContext;
-        
+
         await _next(context);
     }
 
@@ -69,9 +69,14 @@ public class FakeAuthenticationMiddleware
             "/api/health",
             "/api/version",
             "/swagger",
-            "/swagger/",
-            "/"
+            "/swagger/"
         };
+
+        // Check for exact root path match separately
+        if (path == "/")
+        {
+            return true;
+        }
 
         return skipPaths.Any(skipPath => path.StartsWith(skipPath));
     }

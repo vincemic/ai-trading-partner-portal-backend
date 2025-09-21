@@ -53,7 +53,7 @@ public class SftpController : ControllerBase
             
             if (userContext.Role != "PartnerAdmin")
             {
-                return Forbid("Only PartnerAdmin can rotate passwords");
+                return StatusCode(403, new { error = "Forbidden", message = "Only PartnerAdmin can rotate passwords" });
             }
 
             var (response, audit) = await _sftpService.RotateAsync(userContext.PartnerId, request, userContext);

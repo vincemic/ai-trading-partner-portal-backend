@@ -32,7 +32,7 @@ public class SftpCredentialService : ISftpCredentialService
         return new SftpCredentialMetadataDto
         {
             LastRotatedAt = credential.LastRotatedAt?.ToString("O"),
-            RotationMethod = credential.RotationMethod?.ToString()
+            RotationMethod = credential.RotationMethod?.ToString()?.ToLowerInvariant()
         };
     }
 
@@ -102,7 +102,7 @@ public class SftpCredentialService : ISftpCredentialService
             Metadata = new SftpCredentialMetadataDto
             {
                 LastRotatedAt = credential.LastRotatedAt?.ToString("O"),
-                RotationMethod = credential.RotationMethod?.ToString()
+                RotationMethod = credential.RotationMethod?.ToString()?.ToLowerInvariant()
             }
         };
 

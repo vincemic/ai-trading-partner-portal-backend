@@ -25,10 +25,11 @@ public class AuthController : ControllerBase
     [HttpGet("version")]
     public IActionResult Version()
     {
-        return Ok(new { 
-            version = "1.0.0", 
-            build = "pilot", 
-            timestamp = DateTime.UtcNow.ToString("O") 
+        return Ok(new
+        {
+            version = "1.0.0",
+            build = "pilot",
+            timestamp = DateTime.UtcNow.ToString("O")
         });
     }
 }

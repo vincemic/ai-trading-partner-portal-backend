@@ -81,11 +81,11 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var keys = await GetResponseContentAsync<List<KeySummaryDto>>(response);
         keys.Should().NotBeNull();
         keys.Should().HaveCountGreaterOrEqualTo(1);
-        
+
         var primaryKey = keys.FirstOrDefault(k => k.IsPrimary);
         primaryKey.Should().NotBeNull();
         primaryKey!.KeyId.Should().Be(_testKeyId.ToString());
@@ -103,7 +103,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var keys = await GetResponseContentAsync<List<KeySummaryDto>>(response);
         keys.Should().NotBeNull();
     }
@@ -139,7 +139,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var newKey = await GetResponseContentAsync<KeySummaryDto>(response);
         newKey.Should().NotBeNull();
         newKey.KeyId.Should().NotBeEmpty();
@@ -153,7 +153,7 @@ public class KeysControllerTests : IntegrationTestBase
         // Arrange
         await SeedTestDataAsync();
         SetUserAuthentication();
-        
+
         var request = new UploadKeyRequest
         {
             PublicKeyArmored = "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nNew test key content\n\n-----END PGP PUBLIC KEY BLOCK-----",
@@ -202,7 +202,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var result = await GetResponseContentAsync<GenerateKeyResponse>(response);
         result.Should().NotBeNull();
         result.PrivateKeyArmored.Should().NotBeEmpty();
@@ -217,7 +217,7 @@ public class KeysControllerTests : IntegrationTestBase
         // Arrange
         await SeedTestDataAsync();
         SetUserAuthentication();
-        
+
         var request = new GenerateKeyRequest
         {
             MakePrimary = false
@@ -245,7 +245,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("success");
         content.Should().Contain("auditId");
@@ -257,7 +257,7 @@ public class KeysControllerTests : IntegrationTestBase
         // Arrange
         await SeedTestDataAsync();
         SetUserAuthentication();
-        
+
         var request = new RevokeKeyRequest
         {
             Reason = "Test revocation"
@@ -293,12 +293,12 @@ public class KeysControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        
+
         // Get a non-primary key to promote
         var keysResponse = await Client.GetAsync("/api/keys");
         var keys = await GetResponseContentAsync<List<KeySummaryDto>>(keysResponse);
         var nonPrimaryKey = keys.FirstOrDefault(k => !k.IsPrimary);
-        
+
         if (nonPrimaryKey == null)
         {
             // Skip test if no non-primary key exists
@@ -310,7 +310,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("success");
     }
@@ -354,7 +354,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("success");
     }

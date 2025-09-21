@@ -18,7 +18,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestApplicationFactory
     {
         Factory = factory;
         Client = factory.CreateClient();
-        
+
         // Set default test authentication token
         SetAuthenticationToken("test-session-token");
     }
@@ -87,7 +87,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestApplicationFactory
     {
         response.IsSuccessStatusCode.Should().BeTrue(
             $"Expected successful status code but got {response.StatusCode}. Content: {await response.Content.ReadAsStringAsync()}");
-        
+
         return await GetResponseContentAsync<T>(response);
     }
 

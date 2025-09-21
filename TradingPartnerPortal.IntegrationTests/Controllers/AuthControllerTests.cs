@@ -19,7 +19,7 @@ public class AuthControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var content = await response.Content.ReadAsStringAsync();
         content.Should().NotBeNull();
         content.Should().Contain("status");
@@ -34,7 +34,7 @@ public class AuthControllerTests : IntegrationTestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var content = await response.Content.ReadAsStringAsync();
         content.Should().NotBeNull();
         content.Should().Contain("version");
