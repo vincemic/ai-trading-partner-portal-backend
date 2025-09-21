@@ -3,15 +3,13 @@ using FluentAssertions;
 using TradingPartnerPortal.Application.DTOs;
 using TradingPartnerPortal.Domain.Entities;
 using TradingPartnerPortal.Domain.Enums;
-using TradingPartnerPortal.Infrastructure.Authentication;
 
 namespace TradingPartnerPortal.IntegrationTests.Controllers;
 
 public class SftpControllerTests : IntegrationTestBase
 {
-    private readonly Guid _testPartnerId = Guid.NewGuid();
-    private string _adminSessionToken = string.Empty;
-    private string _userSessionToken = string.Empty;
+    // Use the default test partner ID that matches the middleware
+    private readonly Guid _testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     public SftpControllerTests(TestApplicationFactory factory) : base(factory)
     {
@@ -19,32 +17,8 @@ public class SftpControllerTests : IntegrationTestBase
 
     protected override async Task SeedTestDataAsync()
     {
-        // Create admin session
-        var adminLoginRequest = new FakeAuthenticationService.FakeLoginRequest
-        {
-            UserId = "admin-user",
-            PartnerId = _testPartnerId.ToString(),
-            Role = "PartnerAdmin"
-        };
-
-        var adminLoginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(adminLoginRequest));
-        var adminLogin = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(adminLoginResponse);
-        _adminSessionToken = adminLogin.SessionToken;
-
-        // Create regular user session
-        var userLoginRequest = new FakeAuthenticationService.FakeLoginRequest
-        {
-            UserId = "regular-user",
-            PartnerId = _testPartnerId.ToString(),
-            Role = "PartnerUser"
-        };
-
-        var userLoginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(userLoginRequest));
-        var userLogin = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(userLoginResponse);
-        _userSessionToken = userLogin.SessionToken;
-
-        // Set admin token by default
-        SetAuthenticationToken(_adminSessionToken);
+        // Set admin authentication by default for seeding
+        SetAdminAuthentication();
 
         // Seed test data
         await Factory.SeedTestDataAsync(context =>
@@ -95,7 +69,7 @@ public class SftpControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
 
         // Act
         var response = await Client.GetAsync("/api/sftp/credential");
@@ -123,17 +97,9 @@ public class SftpControllerTests : IntegrationTestBase
     [Fact]
     public async Task GetCredentialMetadata_WithNonexistentCredential_ReturnsNotFound()
     {
-        // Arrange - don't seed SFTP credential data
-        var loginRequest = new FakeAuthenticationService.FakeLoginRequest
-        {
-            UserId = "admin-user",
-            PartnerId = Guid.NewGuid().ToString(), // Different partner ID
-            Role = "PartnerAdmin"
-        };
-
-        var loginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(loginRequest));
-        var login = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(loginResponse);
-        SetAuthenticationToken(login.SessionToken);
+        // Arrange - Create a different partner context by using a custom token
+        // This simulates a partner with no SFTP credentials
+        SetAuthenticationToken("test-admin-different-partner");
 
         // Act
         var response = await Client.GetAsync("/api/sftp/credential");
@@ -196,7 +162,7 @@ public class SftpControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
         
         var request = new RotatePasswordRequest
         {

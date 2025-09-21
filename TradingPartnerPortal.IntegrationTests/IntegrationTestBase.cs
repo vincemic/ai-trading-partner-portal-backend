@@ -19,7 +19,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestApplicationFactory
         Factory = factory;
         Client = factory.CreateClient();
         
-        // Set default headers for testing
+        // Set default test authentication token
         SetAuthenticationToken("test-session-token");
     }
 
@@ -30,6 +30,22 @@ public abstract class IntegrationTestBase : IClassFixture<TestApplicationFactory
     {
         Client.DefaultRequestHeaders.Remove("X-Session-Token");
         Client.DefaultRequestHeaders.Add("X-Session-Token", token);
+    }
+
+    /// <summary>
+    /// Sets authentication to use an admin test token
+    /// </summary>
+    protected void SetAdminAuthentication()
+    {
+        SetAuthenticationToken("admin-session-token");
+    }
+
+    /// <summary>
+    /// Sets authentication to use a regular user test token
+    /// </summary>
+    protected void SetUserAuthentication()
+    {
+        SetAuthenticationToken("user-session-token");
     }
 
     /// <summary>

@@ -3,14 +3,13 @@ using FluentAssertions;
 using TradingPartnerPortal.Application.DTOs;
 using TradingPartnerPortal.Domain.Entities;
 using TradingPartnerPortal.Domain.Enums;
-using TradingPartnerPortal.Infrastructure.Authentication;
 
 namespace TradingPartnerPortal.IntegrationTests.Controllers;
 
 public class DashboardControllerTests : IntegrationTestBase
 {
-    private readonly Guid _testPartnerId = Guid.NewGuid();
-    private string _sessionToken = string.Empty;
+    // Use the default test partner ID that matches the middleware
+    private readonly Guid _testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     public DashboardControllerTests(TestApplicationFactory factory) : base(factory)
     {
@@ -18,18 +17,8 @@ public class DashboardControllerTests : IntegrationTestBase
 
     protected override async Task SeedTestDataAsync()
     {
-        // Create a test session
-        var loginRequest = new FakeAuthenticationService.FakeLoginRequest
-        {
-            UserId = "test-user",
-            PartnerId = _testPartnerId.ToString(),
-            Role = "PartnerUser"
-        };
-
-        var loginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(loginRequest));
-        var login = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(loginResponse);
-        _sessionToken = login.SessionToken;
-        SetAuthenticationToken(_sessionToken);
+        // Set user authentication for seeding
+        SetUserAuthentication();
 
         // Seed test data
         await Factory.SeedTestDataAsync(context =>

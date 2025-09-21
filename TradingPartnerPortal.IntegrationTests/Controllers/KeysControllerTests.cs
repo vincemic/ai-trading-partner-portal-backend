@@ -3,16 +3,14 @@ using FluentAssertions;
 using TradingPartnerPortal.Application.DTOs;
 using TradingPartnerPortal.Domain.Entities;
 using TradingPartnerPortal.Domain.Enums;
-using TradingPartnerPortal.Infrastructure.Authentication;
 
 namespace TradingPartnerPortal.IntegrationTests.Controllers;
 
 public class KeysControllerTests : IntegrationTestBase
 {
-    private readonly Guid _testPartnerId = Guid.NewGuid();
+    // Use the default test partner ID that matches the middleware
+    private readonly Guid _testPartnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private readonly Guid _testKeyId = Guid.NewGuid();
-    private string _adminSessionToken = string.Empty;
-    private string _userSessionToken = string.Empty;
 
     public KeysControllerTests(TestApplicationFactory factory) : base(factory)
     {
@@ -20,32 +18,8 @@ public class KeysControllerTests : IntegrationTestBase
 
     protected override async Task SeedTestDataAsync()
     {
-        // Create admin session
-        var adminLoginRequest = new FakeAuthenticationService.FakeLoginRequest
-        {
-            UserId = "admin-user",
-            PartnerId = _testPartnerId.ToString(),
-            Role = "PartnerAdmin"
-        };
-
-        var adminLoginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(adminLoginRequest));
-        var adminLogin = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(adminLoginResponse);
-        _adminSessionToken = adminLogin.SessionToken;
-
-        // Create regular user session
-        var userLoginRequest = new FakeAuthenticationService.FakeLoginRequest
-        {
-            UserId = "regular-user",
-            PartnerId = _testPartnerId.ToString(),
-            Role = "PartnerUser"
-        };
-
-        var userLoginResponse = await Client.PostAsync("/api/fake-login", CreateJsonContent(userLoginRequest));
-        var userLogin = await GetResponseContentAsync<FakeAuthenticationService.FakeLoginResponse>(userLoginResponse);
-        _userSessionToken = userLogin.SessionToken;
-
-        // Set admin token by default
-        SetAuthenticationToken(_adminSessionToken);
+        // Set admin authentication by default for seeding
+        SetAdminAuthentication();
 
         // Seed test data
         await Factory.SeedTestDataAsync(context =>
@@ -122,7 +96,7 @@ public class KeysControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
 
         // Act
         var response = await Client.GetAsync("/api/keys");
@@ -178,7 +152,7 @@ public class KeysControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
         
         var request = new UploadKeyRequest
         {
@@ -242,7 +216,7 @@ public class KeysControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
         
         var request = new GenerateKeyRequest
         {
@@ -282,7 +256,7 @@ public class KeysControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
         
         var request = new RevokeKeyRequest
         {
@@ -346,7 +320,7 @@ public class KeysControllerTests : IntegrationTestBase
     {
         // Arrange
         await SeedTestDataAsync();
-        SetAuthenticationToken(_userSessionToken);
+        SetUserAuthentication();
 
         // Act
         var response = await Client.PostAsync($"/api/keys/{_testKeyId}/promote", CreateJsonContent(new { }));

@@ -9,13 +9,14 @@
 ```
 
 1. **STOP**: All running VS Code tasks (API, watch, background processes)
-2. **CLEAN**: Wait for complete process termination  
+2. **CLEAN**: Wait for complete process termination
 3. **BUILD**: Use VS Code tasks to build solution
 4. **TEST**: Run tests with clean environment
 
 **This prevents 90% of development issues including:**
+
 - File lock errors during builds
-- Process conflicts during testing  
+- Process conflicts during testing
 - Port binding conflicts
 - Inconsistent application state
 
@@ -36,12 +37,14 @@
 5. **Then proceed**: With build, test, or other operations
 
 **Why this is critical:**
+
 - Running API processes lock DLL files, causing build failures
 - Integration tests can conflict with running API instances
 - File locks prevent clean builds and deployments
 - Multiple instances can cause port conflicts and unpredictable behavior
 
 **Signs you forgot to stop processes:**
+
 - Build errors: "Could not copy...dll...file is locked by: TradingPartnerPortal.Api"
 - Port conflicts: "Address already in use" errors
 - Test failures: Unexpected HTTP 500 errors
@@ -68,20 +71,23 @@ When the user asks to:
 **STEP-BY-STEP: How to Stop Running VS Code Tasks**
 
 1. **Check Terminal Panel**:
+
    - Press `Ctrl+`` (backtick) to open terminal panel
    - Look for tabs showing running processes:
      - "Run Trading Partner Portal API"
-     - "Watch Tests" 
+     - "Watch Tests"
      - "Build Solution"
      - Any other active tasks
 
 2. **Stop Each Running Task**:
+
    - Click on the terminal tab showing the running process
    - Press `Ctrl+C` to send interrupt signal
    - Wait for the process to stop (look for command prompt to return)
    - Repeat for ALL running terminals
 
 3. **Verify Complete Shutdown**:
+
    - All terminal tabs should show command prompts (not running processes)
    - No more continuous output or "Waiting for changes..." messages
    - Terminal titles should not show "(Running)" indicators
@@ -92,6 +98,7 @@ When the user asks to:
    - Use Task Manager to kill stubborn processes if necessary
 
 **Alternative: Use Stop Background Tasks**
+
 - Press `Ctrl+Shift+P`
 - Run Task → "Stop Background Tasks"
 - This provides guidance but manual stopping is still required
@@ -104,10 +111,12 @@ When the user asks to stop running processes:
 ### Development Workflow
 
 1. **Initial Setup**:
+
    - Task → "Restore Packages"
    - Task → "Build Solution"
 
 2. **Development Loop**:
+
    - Make changes
    - Task → "Build Solution" (check compilation)
    - Task → "Run Tests" (verify functionality)
@@ -136,7 +145,7 @@ When the user asks to stop running processes:
 #### Build & Restore
 
 - Build Solution
-- Clean Solution  
+- Clean Solution
 - Restore Packages
 
 #### Running & Debugging
@@ -175,16 +184,16 @@ When the user asks to stop running processes:
 
 ### When to Use Each Task
 
-| User Request | Task to Use | Notes |
-|--------------|-------------|-------|
-| "Build the project" | Build Solution | Compiles and shows errors |
-| "Run tests" | Run Tests | One-time test execution |
-| "Start the API" | Run Trading Partner Portal API | HTTP only |
-| "Start with HTTPS" | Run Trading Partner Portal API (HTTPS) | HTTP + HTTPS |
-| "Watch for changes" | Watch Tests | Continuous testing |
-| "Check if API works" | Validate API Health | Quick health check |
-| "Full validation" | Full Validation Suite | Build + Test + Validate |
-| "Clean build" | Clean Solution → Build Solution | Remove artifacts first |
+| User Request         | Task to Use                            | Notes                     |
+| -------------------- | -------------------------------------- | ------------------------- |
+| "Build the project"  | Build Solution                         | Compiles and shows errors |
+| "Run tests"          | Run Tests                              | One-time test execution   |
+| "Start the API"      | Run Trading Partner Portal API         | HTTP only                 |
+| "Start with HTTPS"   | Run Trading Partner Portal API (HTTPS) | HTTP + HTTPS              |
+| "Watch for changes"  | Watch Tests                            | Continuous testing        |
+| "Check if API works" | Validate API Health                    | Quick health check        |
+| "Full validation"    | Full Validation Suite                  | Build + Test + Validate   |
+| "Clean build"        | Clean Solution → Build Solution        | Remove artifacts first    |
 
 ### Error Handling
 
@@ -199,7 +208,7 @@ When the user asks to stop running processes:
 If you encounter errors like:
 
 ```
-error MSB3027: Could not copy "...TradingPartnerPortal.Application.dll"... 
+error MSB3027: Could not copy "...TradingPartnerPortal.Application.dll"...
 The file is locked by: "TradingPartnerPortal.Api (process-id)"
 ```
 
@@ -228,6 +237,7 @@ The file is locked by: "TradingPartnerPortal.Api (process-id)"
 "Before building, I need to ensure no processes are running that could lock files:
 
 **Step 1: Stop Running Processes**
+
 1. Check your VS Code terminal panel (`Ctrl+`` )
 2. For each running task/process:
    - Click the terminal tab
@@ -236,8 +246,9 @@ The file is locked by: "TradingPartnerPortal.Api (process-id)"
 3. Ensure all processes are completely stopped
 
 **Step 2: Build the Solution**
+
 1. Press `Ctrl+Shift+P`
-2. Type "Tasks: Run Task"  
+2. Type "Tasks: Run Task"
 3. Select "Build Solution"
 
 Or use: Terminal → Run Task → Build Solution"
@@ -247,11 +258,13 @@ Or use: Terminal → Run Task → Build Solution"
 "I'll run the tests, but first we need to stop any running processes to avoid conflicts:
 
 **Step 1: Stop All Running Processes**
+
 - Stop the API if it's running (`Ctrl+C` in its terminal)
 - Stop any watch tasks or background processes
 - Wait for complete termination
 
 **Step 2: Run Tests**
+
 1. Press `Ctrl+Shift+P`
 2. Type "Tasks: Run Task"
 3. Select "Run Tests"
@@ -263,10 +276,12 @@ Or use: Terminal → Run Task → Run Tests"
 "I'll start the API, but let's ensure a clean startup:
 
 **Step 1: Stop Any Existing API Instance**
+
 - Check for running API processes and stop them
 - This prevents port conflicts
 
 **Step 2: Start Fresh API Instance**
+
 1. Press `Ctrl+Shift+P`
 2. Type "Tasks: Run Task"
 3. Select "Run Trading Partner Portal API"
