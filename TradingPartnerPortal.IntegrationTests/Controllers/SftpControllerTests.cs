@@ -74,7 +74,7 @@ public class SftpControllerTests : IntegrationTestBase
 
         // Assert - API returns metadata (possibly default values) rather than NotFound
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var metadata = await GetResponseContentAsync<SftpCredentialMetadataDto>(response);
         metadata.Should().NotBeNull();
     }
@@ -84,7 +84,7 @@ public class SftpControllerTests : IntegrationTestBase
     {
         // Arrange
         SetAdminAuthentication(); // Ensure admin auth
-        
+
         // Use a password that meets the API's requirements
         var request = new RotatePasswordRequest
         {
@@ -107,7 +107,7 @@ public class SftpControllerTests : IntegrationTestBase
         {
             // If it succeeds, verify the response
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            
+
             var result = await GetResponseContentAsync<RotatePasswordResponse>(response);
             result.Should().NotBeNull();
             result.Password.Should().NotBeNullOrEmpty();

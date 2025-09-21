@@ -37,7 +37,7 @@ public class KeysControllerTests : IntegrationTestBase
 
         // Should have at least one key with valid properties
         keys.All(k => !string.IsNullOrEmpty(k.KeyId)).Should().BeTrue("all keys should have valid IDs");
-        
+
         // There may or may not be a primary key depending on the seeded data
         var primaryKeys = keys.Where(k => k.IsPrimary).ToList();
         primaryKeys.Count.Should().BeLessOrEqualTo(1, "there should be at most one primary key");
@@ -291,7 +291,7 @@ public class KeysControllerTests : IntegrationTestBase
         // Get available keys
         var keysResponse = await Client.GetAsync("/api/keys");
         var keys = await GetResponseContentAsync<List<KeySummaryDto>>(keysResponse);
-        
+
         // Skip test if no keys available
         if (keys.Count == 0)
         {
