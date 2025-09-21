@@ -220,6 +220,8 @@ FodyWeavers.xsd
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/COPILOT_INSTRUCTIONS.md
+!.vscode/DEVELOPMENT.md
 *.code-workspace
 
 # Local History for Visual Studio Code
