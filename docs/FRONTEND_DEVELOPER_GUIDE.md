@@ -1,6 +1,7 @@
 # Trading Partner Portal Backend API - Frontend Developer Guide
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [API Endpoints](#api-endpoints)
 3. [Authentication & Authorization](#authentication--authorization)
@@ -15,11 +16,13 @@
 The Trading Partner Portal Backend API provides REST endpoints for managing EDI trading partner credentials and monitoring file transfer operations. It's built with ASP.NET Core and follows OpenAPI specifications.
 
 ### Base URLs
+
 - **Development HTTP**: `http://localhost:5096`
 - **Development HTTPS**: `https://localhost:7096`
 - **Swagger UI**: Available at both URLs with `/swagger` path
 
 ### Key Features
+
 - PGP key management (upload, generate, revoke, promote)
 - SFTP credential management
 - Dashboard metrics and analytics
@@ -31,12 +34,15 @@ The Trading Partner Portal Backend API provides REST endpoints for managing EDI 
 ### System Endpoints
 
 #### Health Check
+
 ```http
 GET /api/health
 ```
+
 Returns basic health status for the API service.
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -45,12 +51,15 @@ Returns basic health status for the API service.
 ```
 
 #### Version Information
+
 ```http
 GET /api/version
 ```
+
 Returns API version and build information.
 
 **Response:**
+
 ```json
 {
   "version": "1.0.0",
@@ -62,12 +71,15 @@ Returns API version and build information.
 ### Dashboard Endpoints
 
 #### Get Dashboard Summary
+
 ```http
 GET /api/dashboard/summary
 ```
+
 Returns key performance indicators for the dashboard.
 
 **Response:**
+
 ```json
 {
   "inboundFiles24h": 45,
@@ -83,16 +95,20 @@ Returns key performance indicators for the dashboard.
 ```
 
 #### Get Time Series Data
+
 ```http
 GET /api/dashboard/timeseries?from={datetime}&to={datetime}
 ```
+
 Returns hourly file count data for charting.
 
 **Parameters:**
+
 - `from` (optional): Start datetime (ISO 8601 format, defaults to 48 hours ago)
 - `to` (optional): End datetime (ISO 8601 format, defaults to now)
 
 **Response:**
+
 ```json
 {
   "points": [
@@ -106,17 +122,21 @@ Returns hourly file count data for charting.
 ```
 
 #### Get Top Errors
+
 ```http
 GET /api/dashboard/errors/top?from={datetime}&to={datetime}&top={number}
 ```
+
 Returns the most frequent error categories.
 
 **Parameters:**
+
 - `from` (optional): Start datetime (defaults to 24 hours ago)
 - `to` (optional): End datetime (defaults to now)
 - `top` (optional): Number of top errors to return (default: 5)
 
 **Response:**
+
 ```json
 {
   "categories": [
@@ -133,12 +153,15 @@ Returns the most frequent error categories.
 ```
 
 #### Get Connection Health
+
 ```http
 GET /api/dashboard/connection/health?from={datetime}&to={datetime}
 ```
+
 Returns connection success/failure metrics over time.
 
 **Response:**
+
 ```json
 [
   {
@@ -152,12 +175,15 @@ Returns connection success/failure metrics over time.
 ```
 
 #### Get Connection Status
+
 ```http
 GET /api/dashboard/connection/status
 ```
+
 Returns current connection status for the partner.
 
 **Response:**
+
 ```json
 {
   "partnerId": "11111111-1111-1111-1111-111111111111",
@@ -167,12 +193,15 @@ Returns current connection status for the partner.
 ```
 
 #### Get Throughput Metrics
+
 ```http
 GET /api/dashboard/throughput?from={datetime}&to={datetime}
 ```
+
 Returns data throughput metrics over time.
 
 **Response:**
+
 ```json
 [
   {
@@ -185,15 +214,19 @@ Returns data throughput metrics over time.
 ```
 
 #### Get Large Files
+
 ```http
 GET /api/dashboard/large-files?from={datetime}&to={datetime}&limit={number}
 ```
+
 Returns information about large files processed.
 
 **Parameters:**
+
 - `limit` (optional): Maximum number of files to return (default: 10, max: 50)
 
 **Response:**
+
 ```json
 [
   {
@@ -205,12 +238,15 @@ Returns information about large files processed.
 ```
 
 #### Get Connection Performance
+
 ```http
 GET /api/dashboard/connection/performance?from={datetime}&to={datetime}
 ```
+
 Returns connection performance metrics.
 
 **Response:**
+
 ```json
 [
   {
@@ -224,15 +260,19 @@ Returns connection performance metrics.
 ```
 
 #### Get Daily Summary
+
 ```http
 GET /api/dashboard/daily-summary?days={number}
 ```
+
 Returns daily operation summaries.
 
 **Parameters:**
+
 - `days` (optional): Number of days to include (default: 7, max: 14)
 
 **Response:**
+
 ```json
 [
   {
@@ -246,15 +286,19 @@ Returns daily operation summaries.
 ```
 
 #### Get Failure Bursts
+
 ```http
 GET /api/dashboard/failure-bursts?lookbackMinutes={number}
 ```
+
 Returns periods of high failure rates.
 
 **Parameters:**
+
 - `lookbackMinutes` (optional): Minutes to look back (default: 1440 = 24 hours)
 
 **Response:**
+
 ```json
 [
   {
@@ -265,15 +309,19 @@ Returns periods of high failure rates.
 ```
 
 #### Get Zero File Window Status
+
 ```http
 GET /api/dashboard/zero-file-window?windowHours={number}
 ```
+
 Returns information about periods with no file activity.
 
 **Parameters:**
+
 - `windowHours` (optional): Hours to check (default: 4, range: 1-12)
 
 **Response:**
+
 ```json
 {
   "windowHours": 4,
@@ -285,12 +333,15 @@ Returns information about periods with no file activity.
 ### PGP Key Management
 
 #### List Keys
+
 ```http
 GET /api/keys
 ```
+
 Returns all PGP keys for the authenticated partner.
 
 **Response:**
+
 ```json
 [
   {
@@ -308,14 +359,17 @@ Returns all PGP keys for the authenticated partner.
 ```
 
 #### Upload Key
+
 ```http
 POST /api/keys/upload
 ```
+
 **Required Role:** PartnerAdmin
 
 Uploads a new PGP public key.
 
 **Request Body:**
+
 ```json
 {
   "publicKeyArmored": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n...\n-----END PGP PUBLIC KEY BLOCK-----",
@@ -326,6 +380,7 @@ Uploads a new PGP public key.
 ```
 
 **Response:**
+
 ```json
 {
   "keyId": "new-key-id",
@@ -341,14 +396,17 @@ Uploads a new PGP public key.
 ```
 
 #### Generate Key
+
 ```http
 POST /api/keys/generate
 ```
+
 **Required Role:** PartnerAdmin
 
 Generates a new PGP key pair server-side.
 
 **Request Body:**
+
 ```json
 {
   "validFrom": "2024-09-21T00:00:00.000Z",
@@ -358,6 +416,7 @@ Generates a new PGP key pair server-side.
 ```
 
 **Response:**
+
 ```json
 {
   "privateKeyArmored": "-----BEGIN PGP PRIVATE KEY BLOCK-----\n...\n-----END PGP PRIVATE KEY BLOCK-----",
@@ -378,14 +437,17 @@ Generates a new PGP key pair server-side.
 **⚠️ Security Note:** The private key is returned only once and should be immediately saved by the client.
 
 #### Revoke Key
+
 ```http
 POST /api/keys/{keyId}/revoke
 ```
+
 **Required Role:** PartnerAdmin
 
 Revokes a PGP key, making it unavailable for future operations.
 
 **Request Body:**
+
 ```json
 {
   "reason": "Key rotation - replaced with new key"
@@ -393,6 +455,7 @@ Revokes a PGP key, making it unavailable for future operations.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -401,14 +464,17 @@ Revokes a PGP key, making it unavailable for future operations.
 ```
 
 #### Promote Key
+
 ```http
 POST /api/keys/{keyId}/promote
 ```
+
 **Required Role:** PartnerAdmin
 
 Promotes a key to primary status for outbound encryption.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -419,12 +485,15 @@ Promotes a key to primary status for outbound encryption.
 ### SFTP Credential Management
 
 #### Get Credential Metadata
+
 ```http
 GET /api/sftp/credential
 ```
+
 Returns SFTP credential metadata (without the actual password).
 
 **Response:**
+
 ```json
 {
   "lastRotatedAt": "2024-09-15T14:20:00.000Z",
@@ -433,14 +502,17 @@ Returns SFTP credential metadata (without the actual password).
 ```
 
 #### Rotate Password
+
 ```http
 POST /api/sftp/credential/rotate
 ```
+
 **Required Role:** PartnerAdmin
 
 Rotates the SFTP password either automatically or with a provided password.
 
 **Request Body (Auto-generate):**
+
 ```json
 {
   "mode": "auto"
@@ -448,6 +520,7 @@ Rotates the SFTP password either automatically or with a provided password.
 ```
 
 **Request Body (Manual):**
+
 ```json
 {
   "mode": "manual",
@@ -456,6 +529,7 @@ Rotates the SFTP password either automatically or with a provided password.
 ```
 
 **Response:**
+
 ```json
 {
   "password": "NewGeneratedPassword123!@#",
@@ -479,11 +553,13 @@ For testing purposes, the API uses predefined session tokens that are recognized
 The system recognizes these predefined test tokens:
 
 **PartnerAdmin Access:**
+
 - `admin-session-token`
 - Any token starting with `test-admin-` (e.g., `test-admin-user1`)
 
 **PartnerUser Access:**
-- `user-session-token` 
+
+- `user-session-token`
 - `test-session-token`
 - Any token starting with `test-user-` (e.g., `test-user-john`)
 
@@ -507,6 +583,7 @@ X-Session-Token: admin-session-token
 ## Data Models
 
 ### Key Status Values
+
 - `Active`: Key is valid and can be used
 - `Revoked`: Key has been revoked and cannot be used
 - `Expired`: Key has passed its validity period
@@ -514,18 +591,22 @@ X-Session-Token: admin-session-token
 - `Superseded`: Key has been replaced but may still accept inbound for overlap period
 
 ### File Status Values
+
 - `Success`: File processed successfully
 - `Failed`: File processing failed
 - `Processing`: File is currently being processed
 - `Pending`: File is queued for processing
 
 ### Connection Outcomes
+
 - `Success`: Connection established successfully
 - `Failed`: Connection failed due to network or technical issues
 - `AuthFailed`: Connection failed due to authentication issues
 
 ### Document Types (EDI)
+
 Common EDI document types you'll see in test data:
+
 - `850`: Purchase Order
 - `810`: Invoice
 - `997`: Functional Acknowledgment
@@ -567,6 +648,7 @@ The system creates these test partners:
 ### Test PGP Keys
 
 Each partner gets seeded with:
+
 - **Primary Active Key**: RSA 4096-bit, created 30 days ago, valid for 365 days
 - **Secondary Active Key**: RSA 4096-bit, created 10 days ago, valid for 365 days
 - **Revoked Key** (optional): RSA 2048-bit, created 120 days ago, revoked 30 days ago
@@ -574,6 +656,7 @@ Each partner gets seeded with:
 ### Test Data Characteristics
 
 #### File Transfer Events (Last 30 Days)
+
 - **Volume**: 5-25 events per day per partner
 - **Success Rate**: ~80% success, ~15% failed, ~5% processing/pending
 - **File Sizes**: 1KB to 10MB
@@ -581,12 +664,15 @@ Each partner gets seeded with:
 - **Processing Time**: 1-30 minutes for successful files
 
 #### Connection Events (Last 7 Days)
+
 - **Volume**: 20-100 connections per day per partner
 - **Success Rate**: ~80% success, ~15% failed, ~5% auth failed
 - **Connection Times**: 50-2000ms for successful connections, 5-30 seconds for failures
 
 #### Error Messages
+
 Sample error messages you'll see in test data:
+
 - "Invalid document structure in line 45"
 - "Missing required segment ISA"
 - "Authentication timeout after 30 seconds"
@@ -599,6 +685,7 @@ Sample error messages you'll see in test data:
 - "Schema validation failed for segment GS"
 
 #### Audit Events (Last 60 Days)
+
 - **Types**: KeyUpload, KeyGenerate, KeyRevoke, SftpPasswordChange, KeyPromote
 - **Success Rate**: ~90% successful operations
 - **Actors**: Mix of PartnerAdmin, PartnerUser, and InternalSupport roles
@@ -606,12 +693,15 @@ Sample error messages you'll see in test data:
 ### Test Credentials
 
 #### Default Test User
+
 - **User ID**: `test-user@acme.com`
 - **Partner ID**: `11111111-1111-1111-1111-111111111111` (Acme Corporation)
 - **Role**: `PartnerAdmin`
 
 #### SFTP Credentials
+
 Each partner has SFTP credentials with:
+
 - **Password**: Securely hashed (not retrievable)
 - **Last Rotation**: Random date within last 90 days
 - **Method**: Mix of auto and manual rotations
@@ -635,34 +725,39 @@ All API errors return a consistent format:
 ### Common Error Codes
 
 #### Authentication Errors
+
 - `UNAUTHORIZED` (401): Missing or invalid session token
 - `FORBIDDEN` (403): User doesn't have required permissions
 
 #### Validation Errors
+
 - `VALIDATION_FAILED` (400): Request data validation failed
 - `NOT_FOUND` (404): Requested resource doesn't exist
 - `CONFLICT` (409): Operation conflicts with current state (e.g., trying to revoke already revoked key)
 
 #### Server Errors
+
 - `INTERNAL_ERROR` (500): Unexpected server error
 
 ### Error Scenarios by Endpoint
 
 #### Key Management
-- **Upload Key**: 
+
+- **Upload Key**:
   - Invalid PGP format
   - Duplicate fingerprint
   - Key size too small (< 2048 bits)
-- **Generate Key**: 
+- **Generate Key**:
   - Invalid date ranges
   - System unable to generate key
-- **Revoke Key**: 
+- **Revoke Key**:
   - Key not found
   - Key already revoked
   - Cannot revoke primary key without replacement
 
 #### SFTP Operations
-- **Rotate Password**: 
+
+- **Rotate Password**:
   - Weak password (manual mode)
   - No existing credential found
 
@@ -789,10 +884,12 @@ Use these VS Code tasks for development:
 ### Swagger UI
 
 Access the interactive API documentation at:
+
 - HTTP: `http://localhost:5096/swagger`
 - HTTPS: `https://localhost:7096/swagger`
 
 The Swagger UI provides:
+
 - Interactive endpoint testing
 - Request/response schema documentation
 - Authentication testing
