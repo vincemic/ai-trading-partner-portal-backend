@@ -1,0 +1,51 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Launch API (HTTP)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "Build Solution",
+			"program": "${workspaceFolder}/TradingPartnerPortal.Api/bin/Debug/net9.0/TradingPartnerPortal.Api.dll",
+			"args": [],
+			"cwd": "${workspaceFolder}/TradingPartnerPortal.Api",
+			"console": "internalConsole",
+			"stopAtEntry": false,
+			"serverReadyAction": {
+				"action": "openExternally",
+				"pattern": "\\bNow listening on:\\s+(http://localhost:[0-9]+)",
+				"uriFormat": "%s/swagger"
+			},
+			"env": {
+				"ASPNETCORE_ENVIRONMENT": "Development",
+				"ASPNETCORE_URLS": "http://localhost:5096"
+			}
+		},
+		{
+			"name": "Launch API (HTTPS)",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "Build Solution",
+			"program": "${workspaceFolder}/TradingPartnerPortal.Api/bin/Debug/net9.0/TradingPartnerPortal.Api.dll",
+			"args": [],
+			"cwd": "${workspaceFolder}/TradingPartnerPortal.Api",
+			"console": "internalConsole",
+			"stopAtEntry": false,
+			"serverReadyAction": {
+				"action": "openExternally",
+				"pattern": "\\bNow listening on:\\s+(https://localhost:[0-9]+)",
+				"uriFormat": "%s/swagger"
+			},
+			"env": {
+				"ASPNETCORE_ENVIRONMENT": "Development",
+				"ASPNETCORE_URLS": "https://localhost:7096;http://localhost:5096"
+			}
+		},
+		{
+			"name": "Attach to Process",
+			"type": "coreclr",
+			"request": "attach",
+			"processId": "${command:pickProcess}"
+		}
+	]
+}

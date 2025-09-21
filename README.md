@@ -205,14 +205,47 @@ data: {"fileId": "...", "oldStatus": "Processing", "newStatus": "Success"}
 
 ### Prerequisites
 - .NET 9 SDK
-- Visual Studio 2025 or VS Code
+- Visual Studio 2025 or VS Code with C# extension
 
-### Running the Application
+### Development with VS Code (Recommended)
+
+For the best development experience, use Visual Studio Code with the configured tasks and launch configurations.
+
+**📖 See [VS Code Development Guide](.vscode/DEVELOPMENT.md) for detailed instructions**
+
+#### Quick Start
+1. **Clone the repository**
+   ```powershell
+   git clone <repository-url>
+   cd ai-trading-partner-portal-backend
+   ```
+
+2. **Open in VS Code**
+   ```powershell
+   code .
+   ```
+
+3. **Run setup tasks**
+   - Press `Ctrl+Shift+P` → "Tasks: Run Task" → "Restore Packages"
+   - Press `Ctrl+Shift+P` → "Tasks: Run Task" → "Build Solution"
+
+4. **Start the API**
+   - Press `Ctrl+Shift+P` → "Tasks: Run Task" → "Run Trading Partner Portal API"
+   - Or press `F5` to start with debugging
+
+5. **Validate the setup**
+   - Press `Ctrl+Shift+P` → "Tasks: Run Task" → "Full Validation Suite"
+
+#### API Testing
+- Use the included REST client file: `.vscode/api-tests.http`
+- Or access Swagger UI at: `http://localhost:5096/swagger`
+
+### Manual Setup
 
 1. **Clone and Build**
    ```powershell
    git clone <repository-url>
-   cd ai-trading-partner-portal
+   cd ai-trading-partner-portal-backend
    dotnet build
    ```
 
@@ -224,7 +257,7 @@ data: {"fileId": "...", "oldStatus": "Processing", "newStatus": "Success"}
 
 3. **Access Swagger UI**
    ```
-   https://localhost:7001/swagger
+   http://localhost:5096/swagger
    ```
 
 ### Authentication Flow

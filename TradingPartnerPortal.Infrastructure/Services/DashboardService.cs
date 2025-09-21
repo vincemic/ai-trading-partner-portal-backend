@@ -45,6 +45,15 @@ public class DashboardService : IDashboardService
         var avgFileSize = files24h.Any() ? files24h.Average(f => f.SizeBytes) : 0;
         var largeFileCount = files24h.Count(f => f.SizeBytes > 10 * 1024 * 1024); // >10MB
 
+        // Calculate connection success rate
+        var connections24h = await _connectionEventRepository.Query(partnerId)
+            .Where(c => c.OccurredAt >= yesterday)
+            .ToListAsync();
+
+        var successfulConnections = connections24h.Count(c => c.Outcome == ConnectionOutcome.Success);
+        var totalConnections = connections24h.Count;
+        var connectionSuccessRate = totalConnections > 0 ? (double)successfulConnections / totalConnections * 100 : 0;
+
         return new DashboardSummaryDto
         {
             InboundFiles24h = inboundFiles,
@@ -54,6 +63,7 @@ public class DashboardService : IDashboardService
             OpenErrors = openErrors,
             TotalBytes24h = totalBytes,
             AvgFileSizeBytes = Math.Round(avgFileSize, 2),
+            ConnectionSuccessRate24h = Math.Round(connectionSuccessRate, 2),
             LargeFileCount24h = largeFileCount
         };
     }

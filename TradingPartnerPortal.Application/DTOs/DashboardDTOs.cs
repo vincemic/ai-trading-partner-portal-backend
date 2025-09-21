@@ -9,6 +9,7 @@ public class DashboardSummaryDto
     public int OpenErrors { get; set; }
     public long TotalBytes24h { get; set; }
     public double AvgFileSizeBytes { get; set; }
+    public double ConnectionSuccessRate24h { get; set; }
     public int LargeFileCount24h { get; set; }
 }
 

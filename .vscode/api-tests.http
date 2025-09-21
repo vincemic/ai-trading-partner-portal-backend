@@ -1,0 +1,124 @@
+### Trading Partner Portal API Tests
+
+@baseUrl = http://localhost:5096
+@httpsUrl = https://localhost:7096
+
+### Health Check
+GET {{baseUrl}}/api/health
+
+### Version Check  
+GET {{baseUrl}}/api/version
+
+### Fake Login (get session token)
+POST {{baseUrl}}/api/fake-login
+Content-Type: application/json
+
+{
+    "userId": "test-user@acme.com",
+    "partnerId": "11111111-1111-1111-1111-111111111111",
+    "role": "PartnerAdmin"
+}
+
+### Store session token from login response
+@sessionToken = {{fake-login.response.body.sessionToken}}
+
+### List Keys
+GET {{baseUrl}}/api/keys
+X-Session-Token: {{sessionToken}}
+
+### Get Dashboard Summary
+GET {{baseUrl}}/api/dashboard/summary
+X-Session-Token: {{sessionToken}}
+
+### Get Time Series Data
+GET {{baseUrl}}/api/dashboard/timeseries?from=2024-09-20T00:00:00Z&to=2024-09-21T23:59:59Z
+X-Session-Token: {{sessionToken}}
+
+### Get Top Errors
+GET {{baseUrl}}/api/dashboard/errors/top?top=5
+X-Session-Token: {{sessionToken}}
+
+### Get Connection Health
+GET {{baseUrl}}/api/dashboard/connection/health
+X-Session-Token: {{sessionToken}}
+
+### Get Connection Status
+GET {{baseUrl}}/api/dashboard/connection/status
+X-Session-Token: {{sessionToken}}
+
+### Get Throughput Metrics
+GET {{baseUrl}}/api/dashboard/throughput
+X-Session-Token: {{sessionToken}}
+
+### Get Large Files
+GET {{baseUrl}}/api/dashboard/large-files?limit=10
+X-Session-Token: {{sessionToken}}
+
+### Get Connection Performance
+GET {{baseUrl}}/api/dashboard/connection/performance
+X-Session-Token: {{sessionToken}}
+
+### Get Daily Summary
+GET {{baseUrl}}/api/dashboard/daily-summary?days=7
+X-Session-Token: {{sessionToken}}
+
+### Get Failure Bursts
+GET {{baseUrl}}/api/dashboard/failure-bursts?lookbackMinutes=1440
+X-Session-Token: {{sessionToken}}
+
+### Get Zero File Window Status
+GET {{baseUrl}}/api/dashboard/zero-file-window?windowHours=4
+X-Session-Token: {{sessionToken}}
+
+### Get SFTP Credential Metadata
+GET {{baseUrl}}/api/sftp/credential
+X-Session-Token: {{sessionToken}}
+
+### Upload PGP Key
+POST {{baseUrl}}/api/keys/upload
+X-Session-Token: {{sessionToken}}
+Content-Type: application/json
+
+{
+    "publicKeyArmored": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nSAMPLE_KEY_DATA_HERE\n-----END PGP PUBLIC KEY BLOCK-----",
+    "validFrom": "2024-09-21T00:00:00Z",
+    "validTo": "2025-09-21T00:00:00Z",
+    "makePrimary": true
+}
+
+### Generate PGP Key
+POST {{baseUrl}}/api/keys/generate
+X-Session-Token: {{sessionToken}}
+Content-Type: application/json
+
+{
+    "validFrom": "2024-09-21T00:00:00Z",
+    "validTo": "2025-09-21T00:00:00Z",
+    "makePrimary": false
+}
+
+### Rotate SFTP Password (Auto)
+POST {{baseUrl}}/api/sftp/credential/rotate
+X-Session-Token: {{sessionToken}}
+Content-Type: application/json
+
+{
+    "mode": "auto"
+}
+
+### Rotate SFTP Password (Manual)
+POST {{baseUrl}}/api/sftp/credential/rotate
+X-Session-Token: {{sessionToken}}
+Content-Type: application/json
+
+{
+    "mode": "manual",
+    "newPassword": "ComplexPassword123!@#"
+}
+
+### Test Unauthorized Access
+GET {{baseUrl}}/api/dashboard/summary
+
+### Test Invalid Session Token
+GET {{baseUrl}}/api/dashboard/summary
+X-Session-Token: invalid-token-12345

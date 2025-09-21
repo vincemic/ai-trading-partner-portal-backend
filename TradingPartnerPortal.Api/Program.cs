@@ -41,6 +41,8 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IFileEventService, FileEventService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ISseEventService, SseEventService>();
+builder.Services.AddScoped<IAdvancedMetricsService, AdvancedMetricsService>();
+builder.Services.AddScoped<IMockDataSeeder, MockDataSeeder>();
 
 // Register fake authentication
 builder.Services.AddSingleton<FakeAuthenticationService>();
@@ -103,17 +105,11 @@ app.MapControllers();
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<TradingPartnerPortalDbContext>();
-    await SeedSampleData(context);
+    var seeder = scope.ServiceProvider.GetRequiredService<IMockDataSeeder>();
+    await seeder.SeedAsync();
 }
 
 app.Run();
-
-static async Task SeedSampleData(TradingPartnerPortalDbContext context)
-{
-    // Implementation will be added in the next iteration
-    await Task.CompletedTask;
-}
 
 // Make Program class accessible for testing
 public partial class Program { }

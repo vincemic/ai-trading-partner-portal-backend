@@ -1,0 +1,227 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Solution",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["build"],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "Run Tests",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["test", "--logger", "console;verbosity=detailed"],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": "$msCompile",
+			"dependsOn": "Build Solution"
+		},
+		{
+			"label": "Run Trading Partner Portal API",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"TradingPartnerPortal.Api"
+			],
+			"isBackground": true,
+			"problemMatcher": [
+				{
+					"pattern": [
+						{
+							"regexp": "\\bERROR\\b",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^\\s*Building\\.\\.\\.$",
+						"endsPattern": "^\\s*Application started\\."
+					}
+				}
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated"
+			},
+			"dependsOn": "Build Solution"
+		},
+		{
+			"label": "Run Trading Partner Portal API (HTTPS)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"TradingPartnerPortal.Api",
+				"--launch-profile",
+				"https"
+			],
+			"isBackground": true,
+			"problemMatcher": [
+				{
+					"pattern": [
+						{
+							"regexp": "\\bERROR\\b",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^\\s*Building\\.\\.\\.$",
+						"endsPattern": "^\\s*Application started\\."
+					}
+				}
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated"
+			},
+			"dependsOn": "Build Solution"
+		},
+		{
+			"label": "Clean Solution",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["clean"],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Restore Packages",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["restore"],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Watch Tests",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["watch", "test", "--project", "TradingPartnerPortal.IntegrationTests"],
+			"isBackground": true,
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated"
+			},
+			"problemMatcher": [
+				{
+					"pattern": [
+						{
+							"regexp": "\\bERROR\\b",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^\\s*Building\\.\\.\\.$",
+						"endsPattern": "^\\s*Hot reload enabled\\."
+					}
+				}
+			]
+		},
+		{
+			"label": "Stop Background Tasks",
+			"type": "shell",
+			"command": "echo",
+			"args": ["Stopping all background tasks. Use Ctrl+C in terminals to stop running processes."],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Validate API Health",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"try { $response = Invoke-RestMethod -Uri 'http://localhost:5096/api/health' -TimeoutSec 5; Write-Output 'API Health Check: SUCCESS - Response: $response' } catch { Write-Output 'API Health Check: FAILED - $_' }"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Validate API Version",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"try { $response = Invoke-RestMethod -Uri 'http://localhost:5096/api/version' -TimeoutSec 5; Write-Output 'API Version Check: SUCCESS - Response: $response' } catch { Write-Output 'API Version Check: FAILED - $_' }"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Full Validation Suite",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"Build Solution",
+				"Run Tests",
+				"Validate API Health",
+				"Validate API Version"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			}
+		}
+	]
+}
